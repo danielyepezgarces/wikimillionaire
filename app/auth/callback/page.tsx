@@ -1,55 +1,69 @@
-"use client";
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
 
-export default function AuthCallbackPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+    if (!code || !state) {
+      return NextResponse.json({ error: "Faltan parámetros code o state" }, { status: 400 });
+    }
 
-  useEffect(() => {
-    const handleCallback = async () => {
-      const code = searchParams.get("code");
-      const state = searchParams.get("state");
-      const errorParam = searchParams.get("error");
+    // Leer la cookie con el state guardado y validar
+    const cookieState = request.cookies.get("wikimedia_auth_state");
 
-      if (errorParam) {
-        setError(`Error de autenticación: ${errorParam}`);
-        setLoading(false);
-        return;
-      }
+    if (!cookieState) {
+      return NextResponse.json({ error: "No se encontró cookie de estado" }, { status: 400 });
+    }
 
-      if (!code || !state) {
-        setError("No se recibieron parámetros necesarios");
-        setLoading(false);
-        return;
-      }
+    let parsedCookie;
+    try {
+      parsedCookie = JSON.parse(cookieState.value);
+    } catch {
+      return NextResponse.json({ error: "Cookie de estado inválida" }, { status: 400 });
+    }
 
-      try {
-        // Llamar al backend para validar state y obtener token
-        const res = await fetch(`/api/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
+    if (parsedCookie.state !== state) {
+      return NextResponse.json({ error: "El estado no coincide" }, { status: 400 });
+    }
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Error en autenticación");
-        }
+    // Aquí haces el intercambio del código por el token
+    // Ejemplo básico con fetch (ajusta según la API Wikimedia)
 
-        // Si todo ok, redirigir al home o dashboard
-        router.push("/");
-      } catch (e: any) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
+        client_secret: process.env.WIKIMEDIA_CLIENT_SECRET || "",
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "",
+        code_verifier: parsedCookie.codeVerifier,
+      }),
+    });
 
-    handleCallback();
-  }, [searchParams, router]);
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      return NextResponse.json({ error: `Error obteniendo token: ${errorText}` }, { status: tokenResponse.status });
+    }
 
-  if (loading) return <div>Iniciando sesión...</div>;
-  if (error) return <div>Error de autenticación: {error}</div>;
+    const tokenData = await tokenResponse.json();
 
-  return null;
+    // Aquí puedes guardar el access token en supabase o hacer lo que necesites
+
+    // Retornamos el token y returnTo para que el cliente sepa qué hacer
+    return NextResponse.json({
+      accessToken: tokenData.access_token,
+      expiresIn: tokenData.expires_in,
+      returnTo: parsedCookie.returnTo,
+    });
+  } catch (error: any) {
+    console.error("Error en callback:", error);
+    return NextResponse.json({ error: error.message || "Error interno" }, { status: 500 });
+  }
 }
