@@ -29,7 +29,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userInfo = await userInfoResponse.json()
+    const contentType = userInfoResponse.headers.get("content-type")
+    const rawText = await userInfoResponse.text()
+
+    if (!contentType?.includes("application/json")) {
+      console.error("Respuesta no es JSON válida:", rawText)
+      return NextResponse.json(
+        { error: `Respuesta inesperada desde Wikimedia: ${rawText}` },
+        { status: 502 }
+      )
+    }
+
+    let userInfo
+    try {
+      userInfo = JSON.parse(rawText)
+    } catch (parseError) {
+      console.error("Error al parsear JSON:", parseError, "Contenido:", rawText)
+      return NextResponse.json(
+        { error: "Error al interpretar la respuesta de Wikimedia como JSON" },
+        { status: 502 }
+      )
+    }
+
     console.log("Información del usuario:", userInfo)
 
     const supabase = createServerSupabaseClient()
