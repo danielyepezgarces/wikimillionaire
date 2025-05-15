@@ -1,8 +1,7 @@
-'use client'
+"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getCookie, deleteCookie } from "cookies-next"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -11,125 +10,75 @@ export default function AuthCallbackPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const handleCallback = async () => {
+    const run = async () => {
+      setLoading(true)
+      const code = searchParams.get("code")
+      const state = searchParams.get("state")
+      const errParam = searchParams.get("error")
+
+      console.log("Callback params:", { code, state, errParam })
+
+      if (errParam) {
+        setError(`OAuth error: ${errParam}`)
+        setLoading(false)
+        return
+      }
+
+      if (!code) {
+        setError("No se recibió código de autorización")
+        setLoading(false)
+        return
+      }
+
+      const savedState = sessionStorage.getItem("oauth_state")
+      const codeVerifier = sessionStorage.getItem("code_verifier")
+
+      console.log("SessionStorage:", { savedState, codeVerifier })
+
+      if (!savedState || !codeVerifier) {
+        setError("No se encontró el estado o codeVerifier en sessionStorage")
+        setLoading(false)
+        return
+      }
+
+      if (state !== savedState) {
+        setError("Estado de autenticación inválido")
+        setLoading(false)
+        return
+      }
+
       try {
-        setLoading(true)
-
-        // Obtener parámetros de la URL
-        const code = searchParams.get("code")
-        const state = searchParams.get("state")
-        const errorParam = searchParams.get("error")
-
-        // Si hay error en el callback
-        if (errorParam) {
-          console.error("Error en callback de OAuth:", errorParam)
-          setError(`Error de autenticación: ${errorParam}`)
-          return
-        }
-
-        if (!code) {
-          setError("No se recibió código de autorización")
-          return
-        }
-
-        // Intentar obtener el estado de la cookie
-        let authStateRaw = getCookie("wikimedia_auth_state")
-        if (!authStateRaw && typeof window !== "undefined") {
-          // Respaldo desde sessionStorage si no hay cookie
-          authStateRaw = sessionStorage.getItem("wikimedia_auth_state") || null
-        }
-
-        if (!authStateRaw) {
-          setError("No se encontró el estado de autenticación")
-          return
-        }
-
-        let authState
-        try {
-          authState = JSON.parse(authStateRaw as string)
-        } catch (e) {
-          setError("Error al procesar el estado de autenticación")
-          return
-        }
-
-        const { state: savedState, codeVerifier } = authState
-
-        if (state !== savedState) {
-          setError("Estado de autenticación inválido (posible CSRF)")
-          return
-        }
-
-        // Intercambiar código por token
-        const tokenResponse = await fetch("/api/auth/token", {
+        const res = await fetch("/api/auth/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, codeVerifier }),
         })
 
-        if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.json()
-          throw new Error(errorData.error || "Error al obtener el token")
+        if (!res.ok) {
+          const errJson = await res.json()
+          throw new Error(errJson.error || "Error al obtener token")
         }
 
-        const tokenData = await tokenResponse.json()
+        // Limpieza solo después de éxito
+        sessionStorage.removeItem("oauth_state")
+        sessionStorage.removeItem("code_verifier")
 
-        // Obtener información del usuario
-        const userInfoResponse = await fetch("/api/auth/user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken: tokenData.access_token }),
-        })
-
-        if (!userInfoResponse.ok) {
-          const errorData = await userInfoResponse.json()
-          throw new Error(errorData.error || "Error al obtener información del usuario")
-        }
-
-        // Limpiar estado temporal
-        deleteCookie("wikimedia_auth_state")
-        sessionStorage.removeItem("wikimedia_auth_state")
-
-        // Redirigir a la página principal
         router.push("/")
-      } catch (err: any) {
-        console.error("Error en callback de autenticación:", err)
-        setError(err.message || "Error al procesar la autenticación")
+      } catch (e: any) {
+        setError(e.message || "Error en intercambio de token")
       } finally {
         setLoading(false)
       }
     }
 
-    handleCallback()
+    run()
   }, [searchParams, router])
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
-        <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
-          <h1 className="mb-4 text-xl font-bold text-red-400">Error de autenticación</h1>
-          <p className="text-gray-300">{error}</p>
-          <p className="mt-4 text-sm text-gray-400">
-            Por favor, intenta iniciar sesión nuevamente. Si el problema persiste, contacta al administrador.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-4 w-full rounded-md bg-yellow-500 py-2 text-black hover:bg-yellow-600"
-          >
-            Volver al inicio
-          </button>
-        </div>
-      </div>
-    )
-  }
+  if (error)
+    return <div>Error de autenticación: {error}</div>
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
-      <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
-        <h1 className="mb-4 text-xl font-bold">Iniciando sesión...</h1>
-        <div className="flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
-        </div>
-      </div>
-    </div>
-  )
+  if (loading)
+    return <div>Cargando...</div>
+
+  return null
 }
