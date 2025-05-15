@@ -1,69 +1,68 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+"use client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-    if (!code || !state) {
-      return NextResponse.json({ error: "Faltan parámetros code o state" }, { status: 400 });
-    }
+export default function AuthCallbackPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    // Leer la cookie con el state guardado y validar
-    const cookieState = request.cookies.get("wikimedia_auth_state");
+  useEffect(() => {
+    const handleCallback = async () => {
+      const code = searchParams.get("code");
+      const state = searchParams.get("state");
+      const errorParam = searchParams.get("error");
 
-    if (!cookieState) {
-      return NextResponse.json({ error: "No se encontró cookie de estado" }, { status: 400 });
-    }
+      if (errorParam) {
+        setError(`Error de autenticación: ${errorParam}`);
+        setLoading(false);
+        return;
+      }
 
-    let parsedCookie;
-    try {
-      parsedCookie = JSON.parse(cookieState.value);
-    } catch {
-      return NextResponse.json({ error: "Cookie de estado inválida" }, { status: 400 });
-    }
+      if (!code || !state) {
+        setError("No se recibieron parámetros necesarios");
+        setLoading(false);
+        return;
+      }
 
-    if (parsedCookie.state !== state) {
-      return NextResponse.json({ error: "El estado no coincide" }, { status: 400 });
-    }
+      try {
+        const res = await fetch(
+          `/api/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`
+        );
 
-    // Aquí haces el intercambio del código por el token
-    // Ejemplo básico con fetch (ajusta según la API Wikimedia)
+        if (!res.ok) {
+          // Intentar leer el json del error, pero si está vacío, manejarlo
+          let errorMsg = "Error en autenticación";
+          try {
+            const data = await res.json();
+            errorMsg = data.error || errorMsg;
+          } catch {
+            // No hay JSON en respuesta
+          }
+          throw new Error(errorMsg);
+        }
 
-    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
-        client_secret: process.env.WIKIMEDIA_CLIENT_SECRET || "",
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "",
-        code_verifier: parsedCookie.codeVerifier,
-      }),
-    });
+        const data = await res.json();
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      return NextResponse.json({ error: `Error obteniendo token: ${errorText}` }, { status: tokenResponse.status });
-    }
+        // Puedes guardar el token en localStorage, contexto, etc.
+        localStorage.setItem("accessToken", data.accessToken);
 
-    const tokenData = await tokenResponse.json();
+        // Redirigir al returnTo o al home
+        router.push(data.returnTo || "/");
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Aquí puedes guardar el access token en supabase o hacer lo que necesites
+    handleCallback();
+  }, [searchParams, router]);
 
-    // Retornamos el token y returnTo para que el cliente sepa qué hacer
-    return NextResponse.json({
-      accessToken: tokenData.access_token,
-      expiresIn: tokenData.expires_in,
-      returnTo: parsedCookie.returnTo,
-    });
-  } catch (error: any) {
-    console.error("Error en callback:", error);
-    return NextResponse.json({ error: error.message || "Error interno" }, { status: 500 });
-  }
+  if (loading) return <div>Iniciando sesión...</div>;
+  if (error) return <div>Error de autenticación: {error}</div>;
+
+  return null;
 }
