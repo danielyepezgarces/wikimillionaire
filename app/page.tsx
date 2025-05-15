@@ -14,7 +14,7 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950">
-      <header className="container py-4">
+      <header className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold tracking-tight text-white">
             <span className="text-yellow-400">Wiki</span>Millionaire
@@ -28,8 +28,9 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+
       <main className="flex-1">
-        <section className="container flex flex-col items-center justify-center gap-6 py-8 md:py-12 lg:py-24">
+        <section className="container mx-auto px-4 flex flex-col items-center justify-center gap-6 py-8 md:py-12 lg:py-24">
           <div className="mx-auto flex max-w-[980px] flex-col items-center gap-4 text-center">
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
               <span className="text-yellow-400">Wiki</span>Millionaire
@@ -61,18 +62,7 @@ export default function HomePage() {
             {/* Feature 1 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-black"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22v-5" />
                   <path d="M9 8V2" />
                   <path d="M15 8V2" />
@@ -88,18 +78,7 @@ export default function HomePage() {
             {/* Feature 2 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-black"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                   <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                   <path d="M4 22h16" />
@@ -115,18 +94,7 @@ export default function HomePage() {
             {/* Feature 3 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-black"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M8 21h8" />
                   <path d="M12 21v-5" />
                   <path d="M12 3v5" />
@@ -140,8 +108,9 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+
       <footer className="border-t border-purple-700 bg-purple-900/50 py-6">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="container mx-auto px-4 flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-center text-sm text-gray-300 md:text-left">
             <span className="block md:inline">© 2025 WikiMillionaire. </span>
             <span className="block md:inline">{t.general.credits}</span>
