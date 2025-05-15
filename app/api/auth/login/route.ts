@@ -4,9 +4,11 @@ import crypto from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
+    // Generar state y code verifier aleatorios
     const state = crypto.randomBytes(16).toString("hex")
     const codeVerifier = crypto.randomBytes(64).toString("hex")
 
+    // Calcular code challenge (SHA256 base64url)
     const codeChallenge = crypto
       .createHash("sha256")
       .update(codeVerifier)
@@ -22,20 +24,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Configuración incompleta" }, { status: 500 })
     }
 
-    // Leer returnTo de los parámetros
+    // Leer parámetro returnTo para redirigir después del login
     const { searchParams } = new URL(request.url)
     const returnTo = searchParams.get("returnTo") || "/"
 
-    // Guardar en cookie
+    // Guardar state, codeVerifier y returnTo en cookie segura
     const cookieValue = JSON.stringify({ state, codeVerifier, returnTo })
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 10,
+      maxAge: 60 * 10, // 10 minutos
       path: "/",
       sameSite: "lax" as const,
     }
 
+    // Construir URL de autorización OAuth2
     const authUrl =
       `https://meta.wikimedia.org/w/rest.php/oauth2/authorize?` +
       `client_id=${encodeURIComponent(clientId)}` +
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
+    // Responder con redirección y cookie
     const response = NextResponse.redirect(authUrl)
     response.cookies.set("wikimedia_auth_state", cookieValue, cookieOptions)
 
