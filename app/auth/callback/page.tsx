@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getCookie } from "cookies-next"
+import { getCookie, deleteCookie } from "cookies-next"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -20,29 +20,33 @@ export default function AuthCallbackPage() {
         const state = searchParams.get("state")
         const errorParam = searchParams.get("error")
 
-        // Verificar si hay error
+        // Si hay error en el callback
         if (errorParam) {
           console.error("Error en callback de OAuth:", errorParam)
           setError(`Error de autenticación: ${errorParam}`)
           return
         }
 
-        // Verificar si hay código
         if (!code) {
           setError("No se recibió código de autorización")
           return
         }
 
-        // Obtener state y code_verifier de la cookie
-        const authStateCookie = getCookie("wikimedia_auth_state")
-        if (!authStateCookie) {
+        // Intentar obtener el estado de la cookie
+        let authStateRaw = getCookie("wikimedia_auth_state")
+        if (!authStateRaw && typeof window !== "undefined") {
+          // Respaldo desde sessionStorage si no hay cookie
+          authStateRaw = sessionStorage.getItem("wikimedia_auth_state") || null
+        }
+
+        if (!authStateRaw) {
           setError("No se encontró el estado de autenticación")
           return
         }
 
         let authState
         try {
-          authState = JSON.parse(authStateCookie as string)
+          authState = JSON.parse(authStateRaw as string)
         } catch (e) {
           setError("Error al procesar el estado de autenticación")
           return
@@ -50,22 +54,16 @@ export default function AuthCallbackPage() {
 
         const { state: savedState, codeVerifier } = authState
 
-        // Verificar state para prevenir CSRF
         if (state !== savedState) {
-          setError("Estado de autenticación inválido")
+          setError("Estado de autenticación inválido (posible CSRF)")
           return
         }
 
         // Intercambiar código por token
         const tokenResponse = await fetch("/api/auth/token", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            code,
-            codeVerifier,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, codeVerifier }),
         })
 
         if (!tokenResponse.ok) {
@@ -78,12 +76,8 @@ export default function AuthCallbackPage() {
         // Obtener información del usuario
         const userInfoResponse = await fetch("/api/auth/user", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken: tokenData.access_token,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: tokenData.access_token }),
         })
 
         if (!userInfoResponse.ok) {
@@ -91,7 +85,11 @@ export default function AuthCallbackPage() {
           throw new Error(errorData.error || "Error al obtener información del usuario")
         }
 
-        // Redirigir al usuario a la página principal
+        // Limpiar estado temporal
+        deleteCookie("wikimedia_auth_state")
+        sessionStorage.removeItem("wikimedia_auth_state")
+
+        // Redirigir a la página principal
         router.push("/")
       } catch (err: any) {
         console.error("Error en callback de autenticación:", err)
