@@ -24,7 +24,12 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageSelector currentLocale={locale} onLocaleChange={changeLocale} />
-            <WikimediaLoginButton t={t} />
+            {!user && <WikimediaLoginButton t={t} />}
+            {user && (
+              <p className="text-yellow-400">
+                ¡Bienvenido, <strong>{user.username}</strong>!
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -35,34 +40,56 @@ export default function HomePage() {
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
               <span className="text-yellow-400">Wiki</span>Millionaire
             </h1>
+
             <p className="max-w-[700px] text-lg text-gray-200 md:text-xl">
               {t.home.tagline} {t.home.description}
             </p>
-            {user && <p className="text-yellow-400">¡Bienvenido, {user.username}!</p>}
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Button asChild size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
-                <Link href="/play">{t.general.play}</Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
-              >
-                <Link href="/leaderboard">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  {t.general.leaderboard}
-                </Link>
-              </Button>
-            </div>
+
+            {!user ? (
+              <div className="mt-6">
+                <WikimediaLoginButton t={t} />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row mt-6">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                >
+                  <Link href="/play">{t.general.play}</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
+                >
+                  <Link href="/leaderboard">
+                    <Trophy className="mr-2 h-5 w-5" />
+                    {t.general.leaderboard}
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Features Section */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:max-w-5xl">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:max-w-5xl mt-12">
             {/* Feature 1 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-black"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 22v-5" />
                   <path d="M9 8V2" />
                   <path d="M15 8V2" />
@@ -78,7 +105,18 @@ export default function HomePage() {
             {/* Feature 2 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-black"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                   <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                   <path d="M4 22h16" />
@@ -94,7 +132,18 @@ export default function HomePage() {
             {/* Feature 3 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="text-black" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-black"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M8 21h8" />
                   <path d="M12 21v-5" />
                   <path d="M12 3v5" />
