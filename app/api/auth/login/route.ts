@@ -1,50 +1,53 @@
-import { type NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const state = crypto.randomBytes(16).toString("hex");
-    const codeVerifier = crypto.randomBytes(64).toString("hex");
+    const { code, codeVerifier } = await request.json();
 
-    const codeChallenge = crypto
-      .createHash("sha256")
-      .update(codeVerifier)
-      .digest("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    const cookieValue = JSON.stringify({ state, codeVerifier });
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 10,
-      path: "/",
-      sameSite: "lax" as const,
-    };
+    if (!code || !codeVerifier) {
+      return NextResponse.json({ error: "Faltan parámetros code o codeVerifier" }, { status: 400 });
+    }
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID;
-    const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://tu-dominio.com/api/auth/callback";
+    const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET; // Si tu app usa client_secret
+    const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI;
 
     if (!clientId || !redirectUri) {
       return NextResponse.json({ error: "Configuración incompleta" }, { status: 500 });
     }
 
-    const authUrl =
-      `https://meta.wikimedia.org/w/rest.php/oauth2/authorize?` +
-      `client_id=${encodeURIComponent(clientId)}` +
-      `&response_type=code` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&state=${encodeURIComponent(state)}` +
-      `&code_challenge=${encodeURIComponent(codeChallenge)}` +
-      `&code_challenge_method=S256`;
+    // Construir body para el token request
+    const params = new URLSearchParams();
+    params.append("grant_type", "authorization_code");
+    params.append("code", code);
+    params.append("redirect_uri", redirectUri);
+    params.append("client_id", clientId);
+    params.append("code_verifier", codeVerifier);
 
-    const response = NextResponse.redirect(authUrl);
-    response.cookies.set("wikimedia_auth_state", cookieValue, cookieOptions);
+    // Si tu OAuth requiere client_secret (varía según proveedor)
+    if (clientSecret) {
+      params.append("client_secret", clientSecret);
+    }
 
-    return response;
+    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok) {
+      console.error("Error al obtener token OAuth:", tokenData);
+      return NextResponse.json({ error: tokenData.error_description || tokenData.error || "Error al obtener el token" }, { status: 400 });
+    }
+
+    return NextResponse.json(tokenData);
   } catch (error: any) {
-    console.error("Error iniciando autenticación:", error);
-    return NextResponse.json({ error: "Error iniciando autenticación" }, { status: 500 });
+    console.error("Error en /api/auth/token:", error);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
