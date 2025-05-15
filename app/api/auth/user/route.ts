@@ -10,9 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Falta el token de acceso" }, { status: 400 })
     }
 
-    // Obtener información del usuario
-    const userInfoUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile"
+    console.log("Token recibido:", accessToken)
 
+    // Obtener información del usuario desde Wikimedia
+    const userInfoUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile"
     const userInfoResponse = await fetch(userInfoUrl, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!userInfoResponse.ok) {
       const errorText = await userInfoResponse.text()
-      console.error("Error al obtener información del usuario:", errorText)
+      console.error("Respuesta de Wikimedia:", errorText)
       return NextResponse.json(
         { error: `Error al obtener información del usuario: ${errorText}` },
         { status: userInfoResponse.status },
@@ -29,22 +30,23 @@ export async function POST(request: NextRequest) {
     }
 
     const userInfo = await userInfoResponse.json()
+    console.log("Información del usuario:", userInfo)
 
-    // Crear o actualizar usuario en Supabase
     const supabase = createServerSupabaseClient()
 
     // Buscar si el usuario ya existe
-    const { data: existingUser } = await supabase.from("users").select("*").eq("wikimedia_id", userInfo.sub).single()
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("*")
+      .eq("wikimedia_id", userInfo.sub)
+      .single()
 
     let userData
 
     if (existingUser) {
-      // Actualizar usuario existente
       const { data: updatedUser, error: updateError } = await supabase
         .from("users")
-        .update({
-          last_login: new Date().toISOString(),
-        })
+        .update({ last_login: new Date().toISOString() })
         .eq("id", existingUser.id)
         .select()
         .single()
@@ -52,7 +54,6 @@ export async function POST(request: NextRequest) {
       if (updateError) throw updateError
       userData = updatedUser
     } else {
-      // Crear nuevo usuario
       const { data: newUser, error: insertError } = await supabase
         .from("users")
         .insert({
@@ -69,17 +70,18 @@ export async function POST(request: NextRequest) {
       userData = newUser
     }
 
-    // Crear sesión para el usuario
+    const email = `${userInfo.sub}@wikimedia.org`
+    const password = process.env.SUPABASE_USER_PASSWORD || "password123"
+
     const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: `${userInfo.sub}@wikimedia.org`, // Email ficticio basado en el ID de Wikimedia
-      password: process.env.SUPABASE_USER_PASSWORD || "password123", // Contraseña predefinida
+      email,
+      password,
     })
 
     if (signInError) {
-      // Si el usuario no existe en auth, crearlo
       const { error: signUpError } = await supabase.auth.signUp({
-        email: `${userInfo.sub}@wikimedia.org`,
-        password: process.env.SUPABASE_USER_PASSWORD || "password123",
+        email,
+        password,
         options: {
           data: {
             wikimedia_id: userInfo.sub,
@@ -90,10 +92,10 @@ export async function POST(request: NextRequest) {
 
       if (signUpError) {
         console.error("Error al registrar usuario:", signUpError)
-        // Intentar iniciar sesión de nuevo
+
         const { error: retrySignInError } = await supabase.auth.signInWithPassword({
-          email: `${userInfo.sub}@wikimedia.org`,
-          password: process.env.SUPABASE_USER_PASSWORD || "password123",
+          email,
+          password,
         })
 
         if (retrySignInError) {
