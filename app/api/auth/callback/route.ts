@@ -1,39 +1,34 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server"
+import { cookies } from "next/headers"
 
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
-    const errorParam = url.searchParams.get("error");
-
-    if (errorParam) {
-      return NextResponse.json({ error: `Error de autenticación: ${errorParam}` }, { status: 400 });
-    }
+    const url = new URL(request.url)
+    const code = url.searchParams.get("code")
+    const state = url.searchParams.get("state")
 
     if (!code || !state) {
-      return NextResponse.json({ error: "No se recibieron los parámetros necesarios" }, { status: 400 });
+      return NextResponse.json({ error: "Código o estado faltante" }, { status: 400 })
     }
 
-    const cookie = request.cookies.get("wikimedia_auth_state");
-    if (!cookie) {
-      return NextResponse.json({ error: "No se encontró el estado de autenticación" }, { status: 400 });
+    const cookieStore = cookies()
+    const authCookie = cookieStore.get("wikimedia_auth_state")
+
+    if (!authCookie) {
+      return NextResponse.json({ error: "No se encontró la cookie de autenticación" }, { status: 400 })
     }
 
-    let authState;
-    try {
-      authState = JSON.parse(cookie.value);
-    } catch {
-      return NextResponse.json({ error: "Error al procesar el estado de autenticación" }, { status: 400 });
+    const { state: storedState, codeVerifier, returnTo } = JSON.parse(authCookie.value)
+
+    if (state !== storedState) {
+      return NextResponse.json({ error: "El estado no coincide" }, { status: 400 })
     }
 
-    if (state !== authState.state) {
-      return NextResponse.json({ error: "Estado de autenticación inválido" }, { status: 400 });
-    }
+    const clientId = process.env.WIKIMEDIA_CLIENT_ID
+    const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
+    const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
-    // Ahora intercambia el código por token con Wikimedia
-
-    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/token", {
+    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -41,28 +36,53 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "https://tu-dominio.com/api/auth/callback",
-        client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
-        code_verifier: authState.codeVerifier,
+        client_id: clientId!,
+        client_secret: clientSecret!,
+        redirect_uri: redirectUri,
+        code_verifier: codeVerifier,
       }),
-    });
+    })
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      return NextResponse.json({ error: errorData.error || "Error al obtener el token" }, { status: 500 });
+      console.error("Error al obtener el token:", await tokenResponse.text())
+      return NextResponse.json({ error: "Error al obtener el token" }, { status: 500 })
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = await tokenResponse.json()
+    const accessToken = tokenData.access_token
 
-    // Opcional: aquí podrías hacer otra petición para obtener info del usuario con tokenData.access_token
+    // Puedes obtener datos del usuario si los necesitas
+    const userInfoRes = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-    // Eliminar cookie porque ya no se necesita
-    const response = NextResponse.json({ message: "Autenticación exitosa", tokenData });
-    response.cookies.delete("wikimedia_auth_state", { path: "/" });
+    if (!userInfoRes.ok) {
+      console.error("Error al obtener perfil:", await userInfoRes.text())
+      return NextResponse.json({ error: "Error al obtener perfil del usuario" }, { status: 500 })
+    }
 
-    return response;
-  } catch (err: any) {
-    console.error("Error en callback:", err);
-    return NextResponse.json({ error: "Error interno en callback" }, { status: 500 });
+    const user = await userInfoRes.json()
+
+    // Aquí puedes guardar la sesión con el usuario si usas algún sistema de sesiones
+    const response = NextResponse.redirect(returnTo || "/")
+
+    // Guarda los datos básicos del usuario (token o ID) en cookie si quieres
+    response.cookies.set("wikimedia_user", JSON.stringify(user), {
+      httpOnly: false, // Puedes cambiar esto si quieres ocultarlo del cliente
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+      sameSite: "lax",
+    })
+
+    // Limpia la cookie temporal de estado
+    response.cookies.delete("wikimedia_auth_state")
+
+    return response
+  } catch (error: any) {
+    console.error("Error en el callback:", error)
+    return NextResponse.json({ error: "Error en el callback de autenticación" }, { status: 500 })
   }
 }
