@@ -20,20 +20,30 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log("Código de respuesta:", userInfoResponse.status)
+    console.log("Headers:", userInfoResponse.headers)
+
+    const rawText = await userInfoResponse.text()
+
     if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text()
-      console.error("Respuesta de Wikimedia:", errorText)
+      console.error("Error en respuesta:", rawText)
       return NextResponse.json(
-        { error: `Error al obtener información del usuario: ${errorText}` },
+        { error: `Error al obtener información del usuario: ${rawText}` },
         { status: userInfoResponse.status },
       )
     }
 
-    const contentType = userInfoResponse.headers.get("content-type")
-    const rawText = await userInfoResponse.text()
+    if (!rawText) {
+      console.error("Respuesta vacía de Wikimedia")
+      return NextResponse.json(
+        { error: "Respuesta vacía de Wikimedia. Verifica el accessToken." },
+        { status: 502 }
+      )
+    }
 
-    if (!contentType?.includes("application/json")) {
-      console.error("Respuesta no es JSON válida:", rawText)
+    const contentType = userInfoResponse.headers.get("content-type") || ""
+    if (!contentType.includes("application/json")) {
+      console.error("Respuesta no es JSON:", rawText)
       return NextResponse.json(
         { error: `Respuesta inesperada desde Wikimedia: ${rawText}` },
         { status: 502 }
