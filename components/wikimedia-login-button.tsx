@@ -22,7 +22,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     try {
       setIsLoggingIn(true)
       // Redirigir al endpoint de inicio de sesión del servidor
-      window.location.href = "/api/auth/login?returnTo=/"
+      window.location.href = "/api/auth/login"
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
       setIsLoggingIn(false)
