@@ -1,52 +1,69 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { code, state, error, error_description } = req.query;
-
-  if (error) {
-    console.error("OAuth Error:", error, error_description);
-    return res.status(400).send(`Error de autenticación: ${error_description || error}`);
-  }
-
-  if (!code || !state) {
-    return res.status(400).send("Falta el código o el estado en la respuesta.");
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    // Aquí haces el intercambio de 'code' por el access_token
-    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/token", {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+
+    if (!code || !state) {
+      return NextResponse.json({ error: "Faltan parámetros code o state" }, { status: 400 });
+    }
+
+    // Leer la cookie con el state guardado y validar
+    const cookieState = request.cookies.get("wikimedia_auth_state");
+
+    if (!cookieState) {
+      return NextResponse.json({ error: "No se encontró cookie de estado" }, { status: 400 });
+    }
+
+    let parsedCookie;
+    try {
+      parsedCookie = JSON.parse(cookieState.value);
+    } catch {
+      return NextResponse.json({ error: "Cookie de estado inválida" }, { status: 400 });
+    }
+
+    if (parsedCookie.state !== state) {
+      return NextResponse.json({ error: "El estado no coincide" }, { status: 400 });
+    }
+
+    // Aquí haces el intercambio del código por el token
+    // Ejemplo básico con fetch (ajusta según la API Wikimedia)
+
+    const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code.toString(),
-        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "http://localhost:3000/api/auth/callback",
         client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
         client_secret: process.env.WIKIMEDIA_CLIENT_SECRET || "",
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "",
+        code_verifier: parsedCookie.codeVerifier,
       }),
     });
 
     if (!tokenResponse.ok) {
-      const errText = await tokenResponse.text();
-      console.error("Error al obtener token:", errText);
-      return res.status(500).send("Error al obtener token de acceso.");
+      const errorText = await tokenResponse.text();
+      return NextResponse.json({ error: `Error obteniendo token: ${errorText}` }, { status: tokenResponse.status });
     }
 
     const tokenData = await tokenResponse.json();
 
-    // Guardar token en cookie segura o en sesión según tu arquitectura
-    // Por ejemplo:
-    res.setHeader(
-      "Set-Cookie",
-      `access_token=${tokenData.access_token}; HttpOnly; Path=/; Secure; SameSite=Lax; Max-Age=${tokenData.expires_in}`
-    );
+    // Aquí puedes guardar el access token en supabase o hacer lo que necesites
 
-    // Redirigir al frontend para continuar el flujo
-    return res.redirect("/");
-  } catch (err) {
-    console.error("Error en callback OAuth:", err);
-    return res.status(500).send("Error interno del servidor durante autenticación.");
+    // Retornamos el token y returnTo para que el cliente sepa qué hacer
+    return NextResponse.json({
+      accessToken: tokenData.access_token,
+      expiresIn: tokenData.expires_in,
+      returnTo: parsedCookie.returnTo,
+    });
+  } catch (error: any) {
+    console.error("Error en callback:", error);
+    return NextResponse.json({ error: error.message || "Error interno" }, { status: 500 });
   }
 }
