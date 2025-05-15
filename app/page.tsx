@@ -55,7 +55,10 @@ export default function HomePage() {
               </Button>
             </div>
           </div>
+
+          {/* Features Section */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:max-w-5xl">
+            {/* Feature 1 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
                 <svg
@@ -81,6 +84,8 @@ export default function HomePage() {
               <h3 className="text-xl font-bold text-white">{t.home.features.wikidata.title}</h3>
               <p className="text-gray-300">{t.home.features.wikidata.description}</p>
             </div>
+
+            {/* Feature 2 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
                 <svg
@@ -106,6 +111,8 @@ export default function HomePage() {
               <h3 className="text-xl font-bold text-white">{t.home.features.dailyContest.title}</h3>
               <p className="text-gray-300">{t.home.features.dailyContest.description}</p>
             </div>
+
+            {/* Feature 3 */}
             <div className="flex flex-col items-center space-y-2 rounded-lg border border-purple-700 bg-purple-800/50 p-6 text-center shadow-lg">
               <div className="rounded-full bg-yellow-500 p-3">
                 <svg
