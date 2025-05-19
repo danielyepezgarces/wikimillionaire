@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogIn, LogOut, User, Settings } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import type { Translations } from "@/lib/i18n"
 import { useAuth } from "@/contexts/auth-context"
 import Image from "next/image"
@@ -23,6 +23,7 @@ interface WikimediaLoginButtonProps {
 
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { user, logout } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -30,8 +31,8 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      // Redirigir al endpoint de inicio de sesión del servidor
-      window.location.href = "/api/auth/login"
+      // Redirigir al endpoint de inicio de sesión del servidor con la ruta actual como returnTo
+      window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(pathname)}`
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
       setIsLoggingIn(false)
