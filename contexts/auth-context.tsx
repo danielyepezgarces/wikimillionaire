@@ -11,6 +11,7 @@ export type User = {
   wikimedia_id: string | null
   avatar_url: string | null
   email: string | null
+  auth_id?: string | null
 }
 
 // Tipo para el contexto de autenticación
@@ -49,19 +50,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const supabase = createSupabaseClient()
 
         // Verificar si hay una sesión activa
-        const { data: sessionData } = await supabase.auth.getSession()
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error("Error al obtener la sesión:", sessionError)
+          throw sessionError
+        }
+
+        console.log("Sesión obtenida:", sessionData?.session ? "Activa" : "No hay sesión")
 
         if (sessionData?.session) {
-          // Obtener los datos del usuario
+          const authUserId = sessionData.session.user.id
+          console.log("ID de usuario autenticado:", authUserId)
+
+          // Obtener los datos del usuario por auth_id
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("*")
-            .eq("id", sessionData.session.user.id)
+            .eq("auth_id", authUserId)
             .single()
 
-          if (userError) throw userError
+          if (userError) {
+            console.log("No se encontró usuario por auth_id, buscando por email")
 
-          if (userData) {
+            // Intentar buscar por email como alternativa
+            const email = sessionData.session.user.email
+            if (email) {
+              const { data: userByEmail, error: emailError } = await supabase
+                .from("users")
+                .select("*")
+                .eq("email", email)
+                .single()
+
+              if (!emailError && userByEmail) {
+                console.log("Usuario encontrado por email:", userByEmail)
+
+                // Actualizar el auth_id si no está establecido
+                if (!userByEmail.auth_id) {
+                  const { error: updateError } = await supabase
+                    .from("users")
+                    .update({ auth_id: authUserId })
+                    .eq("id", userByEmail.id)
+
+                  if (updateError) {
+                    console.error("Error al actualizar auth_id:", updateError)
+                  }
+                }
+
+                setUser(userByEmail as User)
+                return
+              }
+            }
+
+            // Intentar buscar por wikimedia_id en los metadatos
+            const wikimediaId = sessionData.session.user.user_metadata?.wikimedia_id
+            if (wikimediaId) {
+              const { data: userByWikimediaId, error: wikimediaError } = await supabase
+                .from("users")
+                .select("*")
+                .eq("wikimedia_id", wikimediaId)
+                .single()
+
+              if (!wikimediaError && userByWikimediaId) {
+                console.log("Usuario encontrado por wikimedia_id:", userByWikimediaId)
+
+                // Actualizar el auth_id si no está establecido
+                if (!userByWikimediaId.auth_id) {
+                  const { error: updateError } = await supabase
+                    .from("users")
+                    .update({ auth_id: authUserId })
+                    .eq("id", userByWikimediaId.id)
+
+                  if (updateError) {
+                    console.error("Error al actualizar auth_id:", updateError)
+                  }
+                }
+
+                setUser(userByWikimediaId as User)
+                return
+              }
+            }
+
+            console.error("No se pudo encontrar el usuario en la base de datos")
+          } else if (userData) {
+            console.log("Usuario encontrado por auth_id:", userData)
+
             // Si el usuario tiene email pero no avatar_url, usar Gravatar
             if (userData.email && !userData.avatar_url) {
               userData.avatar_url = getGravatarUrl(userData.email)
@@ -116,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
+      console.log("Token obtenido correctamente")
 
       // 2. Obtener información del usuario
       const userInfoResponse = await fetch("/api/auth/user", {
@@ -134,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
+      console.log("Datos de usuario obtenidos después de login:", userData)
       setUser(userData as User)
     } catch (err) {
       console.error("Error al iniciar sesión:", err)

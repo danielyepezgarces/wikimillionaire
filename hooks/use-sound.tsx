@@ -1,34 +1,53 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 
 export function useSound() {
-  const correctSoundRef = useRef<HTMLAudioElement | null>(null)
-  const incorrectSoundRef = useRef<HTMLAudioElement | null>(null)
+  const [correctSound, setCorrectSound] = useState<HTMLAudioElement | null>(null)
+  const [incorrectSound, setIncorrectSound] = useState<HTMLAudioElement | null>(null)
+  const [isMuted, setIsMuted] = useState(false)
 
   useEffect(() => {
+    // Cargar sonidos solo en el cliente
     if (typeof window !== "undefined") {
-      correctSoundRef.current = new Audio("/sounds/correct.mp3")
-      incorrectSoundRef.current = new Audio("/sounds/incorrect.mp3")
+      const correct = new Audio("/sounds/correct.mp3")
+      const incorrect = new Audio("/sounds/incorrect.mp3")
+
+      setCorrectSound(correct)
+      setIncorrectSound(incorrect)
+
+      // Intentar cargar el estado de mute desde localStorage
+      const savedMute = localStorage.getItem("wikimillionaire-muted")
+      if (savedMute) {
+        setIsMuted(savedMute === "true")
+      }
     }
   }, [])
 
   const playCorrectSound = () => {
-    if (correctSoundRef.current) {
-      correctSoundRef.current.currentTime = 0
-      correctSoundRef.current.play().catch((e) => console.error("Error playing sound:", e))
+    if (correctSound && !isMuted) {
+      correctSound.currentTime = 0
+      correctSound.play().catch((err) => console.error("Error playing sound:", err))
     }
   }
 
   const playIncorrectSound = () => {
-    if (incorrectSoundRef.current) {
-      incorrectSoundRef.current.currentTime = 0
-      incorrectSoundRef.current.play().catch((e) => console.error("Error playing sound:", e))
+    if (incorrectSound && !isMuted) {
+      incorrectSound.currentTime = 0
+      incorrectSound.play().catch((err) => console.error("Error playing sound:", err))
     }
+  }
+
+  const toggleMute = () => {
+    const newMuted = !isMuted
+    setIsMuted(newMuted)
+    localStorage.setItem("wikimillionaire-muted", newMuted.toString())
   }
 
   return {
     playCorrectSound,
     playIncorrectSound,
+    isMuted,
+    toggleMute,
   }
 }
