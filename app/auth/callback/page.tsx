@@ -9,6 +9,7 @@ export default function AuthCallbackPage() {
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<string>("Iniciando proceso de autenticación...")
   const { login } = useAuth()
 
   useEffect(() => {
@@ -34,17 +35,44 @@ export default function AuthCallbackPage() {
           return
         }
 
+        setStatus("Obteniendo token de acceso...")
         console.log("Obteniendo token desde el endpoint de callback...")
 
-        // Llamar al endpoint de callback para obtener el token
-        const res = await fetch(
-          `/api/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
-        )
+        // Obtener la cookie con el codeVerifier
+        const cookieValue = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("wikimedia_auth_state="))
+          ?.split("=")[1]
 
-        if (!res.ok) {
-          let errorMsg = "Error en autenticación"
+        if (!cookieValue) {
+          setError("No se encontró la cookie de estado")
+          return
+        }
+
+        let parsedCookie
+        try {
+          parsedCookie = JSON.parse(decodeURIComponent(cookieValue))
+        } catch (e) {
+          setError("Error al parsear la cookie de estado")
+          return
+        }
+
+        // Llamar al endpoint de token para obtener el token
+        const tokenResponse = await fetch("/api/auth/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            code,
+            codeVerifier: parsedCookie.codeVerifier,
+          }),
+        })
+
+        if (!tokenResponse.ok) {
+          let errorMsg = "Error al obtener el token"
           try {
-            const data = await res.json()
+            const data = await tokenResponse.json()
             errorMsg = data.error || errorMsg
           } catch {
             // No hay JSON en respuesta
@@ -52,8 +80,10 @@ export default function AuthCallbackPage() {
           throw new Error(errorMsg)
         }
 
-        const data = await res.json()
-        console.log("Token obtenido, procesando autenticación...")
+        const tokenData = await tokenResponse.json()
+        console.log("Token obtenido correctamente")
+
+        setStatus("Obteniendo información del usuario...")
 
         // Obtener información del usuario
         const userInfoResponse = await fetch("/api/auth/user", {
@@ -62,20 +92,30 @@ export default function AuthCallbackPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            accessToken: data.accessToken,
+            accessToken: tokenData.access_token,
           }),
         })
 
         if (!userInfoResponse.ok) {
-          const errorData = await userInfoResponse.json()
-          throw new Error(errorData.error || "Error al obtener información del usuario")
+          let errorMsg = "Error al obtener información del usuario"
+          try {
+            const data = await userInfoResponse.json()
+            errorMsg = data.error || errorMsg
+          } catch {
+            // No hay JSON en respuesta
+          }
+          throw new Error(errorMsg)
         }
 
         const userData = await userInfoResponse.json()
         console.log("Usuario autenticado correctamente")
 
+        setStatus("Redirigiendo...")
+
         // Redirigir al usuario a la página principal
-        router.push(data.returnTo || "/")
+        setTimeout(() => {
+          router.push(parsedCookie.returnTo || "/")
+        }, 1000)
       } catch (err: any) {
         console.error("Error en callback de autenticación:", err)
         setError(err.message || "Error al procesar la autenticación")
@@ -92,6 +132,7 @@ export default function AuthCallbackPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
           <h1 className="mb-4 text-xl font-bold">Iniciando sesión...</h1>
+          <p className="mb-4 text-gray-300">{status}</p>
           <div className="flex justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
           </div>
@@ -124,6 +165,7 @@ export default function AuthCallbackPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
         <h1 className="mb-4 text-xl font-bold">Iniciando sesión...</h1>
+        <p className="mb-4 text-gray-300">{status}</p>
         <div className="flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
         </div>

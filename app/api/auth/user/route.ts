@@ -14,48 +14,79 @@ export async function POST(request: NextRequest) {
 
     // Obtener información del usuario desde Wikimedia
     const userInfoUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile"
+
+    console.log("Solicitando información de usuario a:", userInfoUrl)
+
     const userInfoResponse = await fetch(userInfoUrl, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        "User-Agent": "WikiMillionaire/1.0 (https://wikimillionaire.vercel.app/)",
+        Accept: "application/json",
       },
     })
 
+    console.log("Código de respuesta:", userInfoResponse.status)
+
+    const rawText = await userInfoResponse.text()
+    console.log("Respuesta cruda:", rawText.substring(0, 200))
+
     if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text()
-      console.error("Error al obtener información del usuario:", errorText)
+      console.error("Error en respuesta:", rawText)
       return NextResponse.json(
-        { error: `Error al obtener información del usuario: ${errorText}` },
+        { error: `Error al obtener información del usuario: ${rawText}` },
         { status: userInfoResponse.status },
       )
     }
 
-    const userInfo = await userInfoResponse.json()
+    let userInfo
+    try {
+      userInfo = JSON.parse(rawText)
+    } catch (parseError) {
+      console.error("Error al parsear JSON:", parseError, "Contenido:", rawText)
+      return NextResponse.json({ error: "Error al interpretar la respuesta de Wikimedia como JSON" }, { status: 502 })
+    }
+
     console.log("Información del usuario obtenida:", userInfo)
+
+    // Verificar que tenemos la información necesaria
+    if (!userInfo.sub || !userInfo.username) {
+      console.error("Información de usuario incompleta:", userInfo)
+      return NextResponse.json(
+        { error: "La información de usuario recibida de Wikimedia está incompleta" },
+        { status: 400 },
+      )
+    }
 
     const supabase = createServerSupabaseClient()
 
-    // Crear un email único basado en el ID de Wikimedia
-    const email = `${userInfo.sub}@wikimedia.org`
+    // Crear un email único basado en el ID de Wikimedia para Supabase Auth
+    // Esto es necesario porque Supabase Auth requiere un email
+    const authEmail = `${userInfo.sub}@wikimedia.org`
     const password = process.env.SUPABASE_USER_PASSWORD || "password123"
+
+    // Usar el email real del usuario si está disponible
+    const userEmail = userInfo.email || null
+    console.log("Email del usuario:", userEmail || "No disponible")
 
     // 1. Primero, intentar iniciar sesión si el usuario ya existe
     let authUser
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: authEmail,
       password,
     })
 
     if (signInError) {
-      console.log("Usuario no existe, creando nuevo usuario en Auth:", email)
+      console.log("Usuario no existe en Auth, creando nuevo usuario:", authEmail)
 
       // 2. Si no existe, crear el usuario en Auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: authEmail,
         password,
         options: {
           data: {
             wikimedia_id: userInfo.sub,
             username: userInfo.username,
+            real_email: userEmail,
           },
         },
       })
@@ -70,6 +101,21 @@ export async function POST(request: NextRequest) {
     } else {
       authUser = signInData.user
       console.log("Usuario existente en Auth:", authUser?.id)
+
+      // Actualizar los metadatos del usuario si es necesario
+      if (authUser && (authUser.user_metadata?.real_email !== userEmail || !authUser.user_metadata?.real_email)) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            real_email: userEmail,
+          },
+        })
+
+        if (updateError) {
+          console.error("Error al actualizar metadatos del usuario:", updateError)
+        } else {
+          console.log("Metadatos del usuario actualizados con el email real")
+        }
+      }
     }
 
     if (!authUser) {
@@ -90,6 +136,8 @@ export async function POST(request: NextRequest) {
         .update({
           last_login: new Date().toISOString(),
           auth_id: authUser.id, // Asegurarse de que auth_id esté actualizado
+          email: userEmail, // Actualizar el email con el valor real o null
+          avatar_url: userEmail ? getGravatarUrl(userEmail) : null, // Actualizar avatar si hay email
         })
         .eq("id", existingUser.id)
         .select()
@@ -110,8 +158,8 @@ export async function POST(request: NextRequest) {
         .insert({
           username: userInfo.username,
           wikimedia_id: userInfo.sub,
-          email: userInfo.email || null,
-          avatar_url: userInfo.email ? getGravatarUrl(userInfo.email) : null,
+          email: userEmail, // Usar el email real o null
+          avatar_url: userEmail ? getGravatarUrl(userEmail) : null, // Solo usar Gravatar si hay email
           last_login: new Date().toISOString(),
           auth_id: authUser.id, // Vincular con el usuario de Auth
         })

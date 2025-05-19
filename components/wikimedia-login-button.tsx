@@ -77,7 +77,11 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{user.username}</p>
-              <p className="text-xs leading-none text-gray-400">{user.email || "Usuario de Wikimedia"}</p>
+              {user.email ? (
+                <p className="text-xs leading-none text-gray-400">{user.email}</p>
+              ) : (
+                <p className="text-xs leading-none text-gray-400">Usuario de Wikimedia</p>
+              )}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-purple-700" />
