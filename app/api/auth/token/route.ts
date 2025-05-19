@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "WikiMillionaire/1.0 (https://wikimillionaire.vercel.app/)",
       },
       body: params.toString(),
     })
@@ -50,6 +51,12 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = await response.json()
+    console.log("Token obtenido correctamente:", {
+      access_token: tokenData.access_token ? tokenData.access_token.substring(0, 10) + "..." : "no token",
+      token_type: tokenData.token_type,
+      expires_in: tokenData.expires_in,
+    })
+
     return NextResponse.json(tokenData)
   } catch (error: any) {
     console.error("Error en el endpoint de token:", error)

@@ -22,6 +22,7 @@ type AuthContextType = {
   login: (code: string, codeVerifier: string) => Promise<void>
   logout: () => Promise<void>
   getAuthUrl: () => Promise<string>
+  refreshUser: () => Promise<void>
 }
 
 // Crear el contexto
@@ -42,117 +43,129 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Inicializar y verificar la sesión al cargar
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        setLoading(true)
-        const supabase = createSupabaseClient()
+  // Función para verificar la sesión
+  const checkSession = async () => {
+    try {
+      setLoading(true)
+      const supabase = createSupabaseClient()
 
-        // Verificar si hay una sesión activa
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      // Verificar si hay una sesión activa
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
-        if (sessionError) {
-          console.error("Error al obtener la sesión:", sessionError)
-          throw sessionError
-        }
+      if (sessionError) {
+        console.error("Error al obtener la sesión:", sessionError)
+        throw sessionError
+      }
 
-        console.log("Sesión obtenida:", sessionData?.session ? "Activa" : "No hay sesión")
+      console.log("Sesión obtenida:", sessionData?.session ? "Activa" : "No hay sesión")
 
-        if (sessionData?.session) {
-          const authUserId = sessionData.session.user.id
-          console.log("ID de usuario autenticado:", authUserId)
+      if (sessionData?.session) {
+        const authUserId = sessionData.session.user.id
+        console.log("ID de usuario autenticado:", authUserId)
 
-          // Obtener los datos del usuario por auth_id
-          const { data: userData, error: userError } = await supabase
+        // Obtener los datos del usuario por auth_id
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("auth_id", authUserId)
+          .single()
+
+        if (userError) {
+          console.log("No se encontró usuario por auth_id, buscando por email")
+
+          // Intentar buscar por wikimedia_id en los metadatos
+          const wikimediaId = sessionData.session.user.user_metadata?.wikimedia_id
+          if (wikimediaId) {
+            const { data: userByWikimediaId, error: wikimediaError } = await supabase
+              .from("users")
+              .select("*")
+              .eq("wikimedia_id", wikimediaId)
+              .single()
+
+            if (!wikimediaError && userByWikimediaId) {
+              console.log("Usuario encontrado por wikimedia_id:", userByWikimediaId)
+
+              // Actualizar el auth_id si no está establecido
+              if (!userByWikimediaId.auth_id) {
+                const { error: updateError } = await supabase
+                  .from("users")
+                  .update({ auth_id: authUserId })
+                  .eq("id", userByWikimediaId.id)
+
+                if (updateError) {
+                  console.error("Error al actualizar auth_id:", updateError)
+                }
+              }
+
+              setUser(userByWikimediaId as User)
+              return
+            }
+          }
+
+          // Si no se encuentra por wikimedia_id, intentar crear un usuario básico
+          console.log("No se pudo encontrar el usuario en la base de datos, creando uno básico")
+
+          // Obtener el email real de los metadatos si está disponible
+          const realEmail = sessionData.session.user.user_metadata?.real_email || null
+
+          const { data: newUser, error: insertError } = await supabase
             .from("users")
-            .select("*")
-            .eq("auth_id", authUserId)
+            .insert({
+              username: sessionData.session.user.user_metadata?.username || "Usuario",
+              wikimedia_id: wikimediaId || null,
+              email: realEmail,
+              avatar_url: realEmail ? getGravatarUrl(realEmail) : null,
+              last_login: new Date().toISOString(),
+              auth_id: authUserId,
+            })
+            .select()
             .single()
 
-          if (userError) {
-            console.log("No se encontró usuario por auth_id, buscando por email")
-
-            // Intentar buscar por email como alternativa
-            const email = sessionData.session.user.email
-            if (email) {
-              const { data: userByEmail, error: emailError } = await supabase
-                .from("users")
-                .select("*")
-                .eq("email", email)
-                .single()
-
-              if (!emailError && userByEmail) {
-                console.log("Usuario encontrado por email:", userByEmail)
-
-                // Actualizar el auth_id si no está establecido
-                if (!userByEmail.auth_id) {
-                  const { error: updateError } = await supabase
-                    .from("users")
-                    .update({ auth_id: authUserId })
-                    .eq("id", userByEmail.id)
-
-                  if (updateError) {
-                    console.error("Error al actualizar auth_id:", updateError)
-                  }
-                }
-
-                setUser(userByEmail as User)
-                return
-              }
-            }
-
-            // Intentar buscar por wikimedia_id en los metadatos
-            const wikimediaId = sessionData.session.user.user_metadata?.wikimedia_id
-            if (wikimediaId) {
-              const { data: userByWikimediaId, error: wikimediaError } = await supabase
-                .from("users")
-                .select("*")
-                .eq("wikimedia_id", wikimediaId)
-                .single()
-
-              if (!wikimediaError && userByWikimediaId) {
-                console.log("Usuario encontrado por wikimedia_id:", userByWikimediaId)
-
-                // Actualizar el auth_id si no está establecido
-                if (!userByWikimediaId.auth_id) {
-                  const { error: updateError } = await supabase
-                    .from("users")
-                    .update({ auth_id: authUserId })
-                    .eq("id", userByWikimediaId.id)
-
-                  if (updateError) {
-                    console.error("Error al actualizar auth_id:", updateError)
-                  }
-                }
-
-                setUser(userByWikimediaId as User)
-                return
-              }
-            }
-
-            console.error("No se pudo encontrar el usuario en la base de datos")
-          } else if (userData) {
-            console.log("Usuario encontrado por auth_id:", userData)
-
-            // Si el usuario tiene email pero no avatar_url, usar Gravatar
-            if (userData.email && !userData.avatar_url) {
-              userData.avatar_url = getGravatarUrl(userData.email)
-            }
-
-            setUser(userData as User)
+          if (insertError) {
+            console.error("Error al crear usuario básico:", insertError)
+          } else {
+            console.log("Usuario básico creado:", newUser)
+            setUser(newUser as User)
+            return
           }
-        }
-      } catch (err) {
-        console.error("Error al verificar la sesión:", err)
-        setError("Error al verificar la sesión")
-      } finally {
-        setLoading(false)
-      }
-    }
+        } else if (userData) {
+          console.log("Usuario encontrado por auth_id:", userData)
 
+          // Si el usuario tiene email pero no avatar_url, usar Gravatar
+          if (userData.email && !userData.avatar_url) {
+            userData.avatar_url = getGravatarUrl(userData.email)
+
+            // Actualizar el avatar_url en la base de datos
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({ avatar_url: userData.avatar_url })
+              .eq("id", userData.id)
+
+            if (updateError) {
+              console.error("Error al actualizar avatar_url:", updateError)
+            }
+          }
+
+          setUser(userData as User)
+        }
+      }
+    } catch (err) {
+      console.error("Error al verificar la sesión:", err)
+      setError("Error al verificar la sesión")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Inicializar y verificar la sesión al cargar
+  useEffect(() => {
     checkSession()
   }, [])
+
+  // Función para refrescar los datos del usuario
+  const refreshUser = async () => {
+    await checkSession()
+  }
 
   // Función para obtener la URL de autenticación
   const getAuthUrl = async (): Promise<string> => {
@@ -242,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     getAuthUrl,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
+    console.log("URL de autorización:", authUrl)
+
     // Responder con redirección y cookie
     const response = NextResponse.redirect(authUrl)
     response.cookies.set("wikimedia_auth_state", cookieValue, cookieOptions)
