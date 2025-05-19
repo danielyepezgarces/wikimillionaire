@@ -30,13 +30,6 @@ export async function GET(request: NextRequest) {
 
     // Guardar state, codeVerifier y returnTo en cookie segura
     const cookieValue = JSON.stringify({ state, codeVerifier, returnTo })
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 10, // 10 minutos
-      path: "/",
-      sameSite: "lax" as const,
-    }
 
     // Construir URL de autorización OAuth2
     const authUrl =
@@ -49,10 +42,19 @@ export async function GET(request: NextRequest) {
       `&code_challenge_method=S256`
 
     console.log("URL de autorización:", authUrl)
+    console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 20) + "...")
 
     // Responder con redirección y cookie
     const response = NextResponse.redirect(authUrl)
-    response.cookies.set("wikimedia_auth_state", cookieValue, cookieOptions)
+
+    // Configurar la cookie con opciones más permisivas
+    response.cookies.set("wikimedia_auth_state", cookieValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 30, // 30 minutos (aumentado de 10 a 30)
+      path: "/",
+      sameSite: "lax" as const,
+    })
 
     return response
   } catch (error: any) {

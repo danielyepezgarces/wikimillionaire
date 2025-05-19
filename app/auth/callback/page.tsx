@@ -39,13 +39,28 @@ export default function AuthCallbackPage() {
         console.log("Obteniendo token desde el endpoint de callback...")
 
         // Obtener la cookie con el codeVerifier
-        const cookieValue = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("wikimedia_auth_state="))
-          ?.split("=")[1]
+        const getCookie = (name: string) => {
+          const value = `; ${document.cookie}`
+          const parts = value.split(`; ${name}=`)
+          if (parts.length === 2) {
+            const cookieValue = parts.pop()?.split(";").shift()
+            return cookieValue
+          }
+          return null
+        }
+
+        const cookieValue = getCookie("wikimedia_auth_state")
+        console.log("Cookie encontrada:", cookieValue ? "Sí" : "No")
 
         if (!cookieValue) {
-          setError("No se encontró la cookie de estado")
+          console.error("No se encontró la cookie de estado, redirigiendo al login")
+          setStatus("Redirigiendo al inicio de sesión...")
+
+          // Redirigir al usuario al login
+          setTimeout(() => {
+            window.location.href = "/api/auth/login?returnTo=" + encodeURIComponent(window.location.pathname)
+          }, 2000)
+
           return
         }
 
@@ -53,7 +68,15 @@ export default function AuthCallbackPage() {
         try {
           parsedCookie = JSON.parse(decodeURIComponent(cookieValue))
         } catch (e) {
-          setError("Error al parsear la cookie de estado")
+          console.error("Error al parsear la cookie:", e)
+          setError("Error al procesar la información de autenticación")
+          return
+        }
+
+        // Verificar que el state coincida
+        if (parsedCookie.state !== state) {
+          console.error("El state no coincide, posible ataque CSRF")
+          setError("Error de seguridad: el estado no coincide")
           return
         }
 
@@ -114,7 +137,7 @@ export default function AuthCallbackPage() {
 
         // Redirigir al usuario a la página principal
         setTimeout(() => {
-          router.push(parsedCookie.returnTo || "/")
+          window.location.href = parsedCookie.returnTo || "/"
         }, 1000)
       } catch (err: any) {
         console.error("Error en callback de autenticación:", err)
@@ -147,12 +170,16 @@ export default function AuthCallbackPage() {
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
           <h1 className="mb-4 text-xl font-bold text-red-400">Error de autenticación</h1>
           <p className="text-gray-300">{error}</p>
-          <p className="mt-4 text-sm text-gray-400">
-            Por favor, intenta iniciar sesión nuevamente. Si el problema persiste, contacta al administrador.
-          </p>
+          <p className="mt-4 text-sm text-gray-400">Por favor, intenta iniciar sesión nuevamente.</p>
+          <button
+            onClick={() => (window.location.href = "/api/auth/login")}
+            className="mt-4 w-full rounded-md bg-yellow-500 py-2 text-black hover:bg-yellow-600"
+          >
+            Intentar de nuevo
+          </button>
           <button
             onClick={() => router.push("/")}
-            className="mt-4 w-full rounded-md bg-yellow-500 py-2 text-black hover:bg-yellow-600"
+            className="mt-2 w-full rounded-md border border-purple-700 bg-transparent py-2 text-white hover:bg-purple-800/50"
           >
             Volver al inicio
           </button>
