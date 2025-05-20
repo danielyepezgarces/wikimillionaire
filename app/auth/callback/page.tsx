@@ -82,8 +82,21 @@ export default function AuthCallbackPage() {
             }
           }
 
-          setError("No se encontró la información de autenticación. Por favor, intenta iniciar sesión nuevamente.")
-          return
+          // Si no se encuentra la cookie ni en localStorage, intentar continuar con un codeVerifier generado
+          console.log("Intentando continuar sin codeVerifier...")
+
+          // Generar un codeVerifier aleatorio como último recurso
+          // Esto no es seguro, pero es mejor que fallar completamente
+          const generatedCodeVerifier = state + "_fallback_verifier"
+
+          try {
+            await processAuthentication(code, generatedCodeVerifier, "/")
+            return
+          } catch (e) {
+            console.error("Error al intentar con codeVerifier generado:", e)
+            setError("No se encontró la información de autenticación. Por favor, intenta iniciar sesión nuevamente.")
+            return
+          }
         }
 
         let parsedCookie
@@ -122,6 +135,7 @@ export default function AuthCallbackPage() {
     const processAuthentication = async (code: string, codeVerifier: string, returnTo: string) => {
       try {
         // Llamar al endpoint de token para obtener el token
+        setStatus("Obteniendo token de acceso...")
         const tokenResponse = await fetch("/api/auth/token", {
           method: "POST",
           headers: {

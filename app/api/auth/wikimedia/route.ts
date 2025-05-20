@@ -3,7 +3,7 @@ import crypto from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("Iniciando proceso de autenticación con Wikimedia")
+    console.log("Iniciando proceso de autenticación con Wikidata")
 
     // Generar state y code verifier aleatorios
     const state = crypto.randomBytes(16).toString("hex")
@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
     // Guardar state, codeVerifier y returnTo en cookie segura
     const cookieValue = JSON.stringify({ state, codeVerifier, returnTo })
 
-    // Construir URL de autorización OAuth2
+    // Construir URL de autorización OAuth2 para Wikidata
     const authUrl =
-      `https://meta.wikimedia.org/w/rest.php/oauth2/authorize?` +
+      `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
       `client_id=${encodeURIComponent(clientId)}` +
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
-    console.log("URL de autorización Wikimedia:", authUrl.substring(0, 100) + "...")
+    console.log("URL de autorización Wikidata:", authUrl.substring(0, 100) + "...")
     console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 50) + "...")
 
     // Crear una página HTML que almacene el estado en localStorage y luego redirija
@@ -51,17 +51,17 @@ export async function GET(request: NextRequest) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Redirigiendo a Wikimedia...</title>
+        <title>Redirigiendo a Wikidata...</title>
         <script>
           // Almacenar el estado en localStorage como fallback
           localStorage.setItem('wikimedia_auth_state', '${cookieValue.replace(/'/g, "\\'")}');
           
-          // Redirigir a Wikimedia
+          // Redirigir a Wikidata
           window.location.href = "${authUrl}";
         </script>
       </head>
       <body>
-        <p>Redirigiendo a Wikimedia...</p>
+        <p>Redirigiendo a Wikidata...</p>
       </body>
       </html>
     `
