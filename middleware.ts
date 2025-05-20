@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // Rutas que no requieren autenticación
-const publicRoutes = ["/", "/auth/callback", "/api/auth/login", "/api/auth/token", "/api/auth/user", "/api/auth/logout"]
+const publicRoutes = ["/", "/auth/callback", "/api/auth/login", "/api/auth/token", "/api/auth/user", "/api/auth/logout", "/play", "/leaderboard", "/about", "/privacy", "/terms", "/contact", "/help"]
 
 export function middleware(request: NextRequest) {
   // Verificar si la ruta es pública
