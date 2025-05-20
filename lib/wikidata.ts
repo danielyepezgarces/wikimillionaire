@@ -102,7 +102,6 @@ async function generateWikidataQuestion(difficulty: string): Promise<WikidataQue
 
     if (remainingTypes.length > 0) {
       const fallbackType = remainingTypes[Math.floor(Math.random() * remainingTypes.length)]
-      // console.log(`Trying fallback question type: ${fallbackType}`)
 
       // Intentar con un tipo alternativo
       switch (fallbackType) {

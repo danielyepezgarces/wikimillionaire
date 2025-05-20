@@ -51,15 +51,9 @@ function CallbackContent() {
         const codeVerifier = localStorage.getItem("wikimillionaire_oauth_code_verifier")
         const timestamp = localStorage.getItem("wikimillionaire_oauth_timestamp")
 
-        // console.log("Estado guardado:", savedState)
-        // console.log("Estado recibido:", state)
-        // console.log("CodeVerifier guardado:", codeVerifier ? "Presente" : "Ausente")
-
         // Verificar que el estado coincida
         if (!savedState || savedState !== state) {
           console.error("El estado no coincide o no se encontró")
-          // console.log("Estado guardado:", savedState)
-          // console.log("Estado recibido:", state)
           setError("Error de seguridad: el estado no coincide")
           return
         }

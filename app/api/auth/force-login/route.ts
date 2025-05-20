@@ -18,7 +18,6 @@ export async function POST() {
     }
 
     const authUserId = sessionData.session.user.id
-    // console.log("ID de usuario autenticado:", authUserId)
 
     // Obtener todos los usuarios
     const { data: allUsers, error: allUsersError } = await supabase.from("users").select("*")
@@ -28,7 +27,6 @@ export async function POST() {
       return NextResponse.json({ error: "Error al obtener todos los usuarios" }, { status: 500 })
     }
 
-    // console.log("Todos los usuarios:", allUsers)
 
     // Si no hay usuarios, crear uno
     if (!allUsers || allUsers.length === 0) {
