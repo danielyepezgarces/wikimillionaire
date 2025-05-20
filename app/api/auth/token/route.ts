@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faltan variables de entorno para la autenticación" }, { status: 500 })
     }
 
-    const tokenUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/access_token"
+    console.log("Usando client_id:", clientId)
+    console.log("Usando redirect_uri:", redirectUri)
+
+    const tokenUrl = "https://www.wikidata.org/w/rest.php/oauth2/access_token"
 
     const params = new URLSearchParams()
     params.append("grant_type", "authorization_code")
