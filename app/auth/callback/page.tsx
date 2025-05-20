@@ -49,11 +49,39 @@ export default function AuthCallbackPage() {
           return null
         }
 
+        // Listar todas las cookies para depuración
+        console.log("Todas las cookies:", document.cookie)
+
         const cookieValue = getCookie("wikimedia_auth_state")
         console.log("Cookie encontrada:", cookieValue ? "Sí" : "No")
 
         if (!cookieValue) {
           console.error("No se encontró la cookie de estado")
+
+          // Intentar obtener la cookie del localStorage como fallback
+          const localStorageValue = localStorage.getItem("wikimedia_auth_state")
+
+          if (localStorageValue) {
+            console.log("Se encontró el estado en localStorage")
+
+            try {
+              const parsedValue = JSON.parse(localStorageValue)
+
+              // Verificar que el state coincida
+              if (parsedValue.state !== state) {
+                console.error("El state en localStorage no coincide, posible ataque CSRF")
+                setError("Error de seguridad: el estado no coincide")
+                return
+              }
+
+              // Continuar con el flujo usando el valor de localStorage
+              await processAuthentication(code, parsedValue.codeVerifier, parsedValue.returnTo)
+              return
+            } catch (e) {
+              console.error("Error al parsear el valor de localStorage:", e)
+            }
+          }
+
           setError("No se encontró la información de autenticación. Por favor, intenta iniciar sesión nuevamente.")
           return
         }
@@ -61,6 +89,11 @@ export default function AuthCallbackPage() {
         let parsedCookie
         try {
           parsedCookie = JSON.parse(decodeURIComponent(cookieValue))
+          console.log("Cookie parseada correctamente:", {
+            state: parsedCookie.state ? "presente" : "ausente",
+            codeVerifier: parsedCookie.codeVerifier ? "presente" : "ausente",
+            returnTo: parsedCookie.returnTo,
+          })
         } catch (e) {
           console.error("Error al parsear la cookie:", e)
           setError("Error al procesar la información de autenticación")
@@ -70,10 +103,24 @@ export default function AuthCallbackPage() {
         // Verificar que el state coincida
         if (parsedCookie.state !== state) {
           console.error("El state no coincide, posible ataque CSRF")
+          console.log("State esperado:", state)
+          console.log("State recibido:", parsedCookie.state)
           setError("Error de seguridad: el estado no coincide")
           return
         }
 
+        await processAuthentication(code, parsedCookie.codeVerifier, parsedCookie.returnTo)
+      } catch (err: any) {
+        console.error("Error en callback de autenticación:", err)
+        setError(err.message || "Error al procesar la autenticación")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Función para procesar la autenticación
+    const processAuthentication = async (code: string, codeVerifier: string, returnTo: string) => {
+      try {
         // Llamar al endpoint de token para obtener el token
         const tokenResponse = await fetch("/api/auth/token", {
           method: "POST",
@@ -82,7 +129,7 @@ export default function AuthCallbackPage() {
           },
           body: JSON.stringify({
             code,
-            codeVerifier: parsedCookie.codeVerifier,
+            codeVerifier,
           }),
         })
 
@@ -129,15 +176,15 @@ export default function AuthCallbackPage() {
 
         setStatus("Redirigiendo...")
 
+        // Limpiar el localStorage si se usó como fallback
+        localStorage.removeItem("wikimedia_auth_state")
+
         // Redirigir al usuario a la página principal
         setTimeout(() => {
-          window.location.href = parsedCookie.returnTo || "/"
+          window.location.href = returnTo || "/"
         }, 1000)
-      } catch (err: any) {
-        console.error("Error en callback de autenticación:", err)
-        setError(err.message || "Error al procesar la autenticación")
-      } finally {
-        setLoading(false)
+      } catch (error) {
+        throw error
       }
     }
 
