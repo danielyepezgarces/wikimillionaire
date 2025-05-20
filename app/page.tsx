@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Trophy, Brain, Users } from "lucide-react"
@@ -10,14 +10,6 @@ import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function HomePage() {
-  return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      <HomeContent />
-    </Suspense>
-  )
-}
-
-function HomeContent() {
   const { locale, translations: t, changeLocale } = useLocale()
   const { user } = useAuth()
   const [showFeatures, setShowFeatures] = useState(false)
@@ -28,6 +20,11 @@ function HomeContent() {
     }, 500)
     return () => clearTimeout(timer)
   }, [])
+
+  // Función para manejar clics en los botones (solo para debug)
+  const handleButtonClick = (destination: string) => {
+    console.log(`Navegando a: ${destination}`)
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950">
@@ -53,13 +50,13 @@ function HomeContent() {
 
         <div className="mb-12 flex flex-col gap-4 sm:flex-row">
           <Button asChild size="lg" className="bg-yellow-500 text-black hover:bg-yellow-600">
-            <Link href="/play">
+            <Link href="/play" onClick={() => handleButtonClick("/play")}>
               {t.general.play}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="border-purple-700 text-white hover:bg-purple-800/50">
-            <Link href="/leaderboard">
+            <Link href="/leaderboard" onClick={() => handleButtonClick("/leaderboard")}>
               <Trophy className="mr-2 h-5 w-5" />
               {t.leaderboard.title}
             </Link>
@@ -68,8 +65,8 @@ function HomeContent() {
 
         {/* Features */}
         <div
-          className={`grid gap-8 md:grid-cols-3 transition-all duration-1000 ease-out ${
-            showFeatures ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          className={`grid gap-8 transition-all duration-1000 ease-out md:grid-cols-3 ${
+            showFeatures ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
           }`}
         >
           <div className="rounded-lg border border-purple-700 bg-purple-900/50 p-6 text-center">
