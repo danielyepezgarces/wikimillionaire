@@ -22,7 +22,7 @@ export function SessionHandler() {
     // Verificar la sesión cuando el componente se monta
     const checkSession = async () => {
       try {
-        console.log("Verificando sesión...")
+        // console.log("Verificando sesión...")
         const supabase = createSupabaseClient()
         const { data, error } = await supabase.auth.getSession()
 
@@ -33,7 +33,7 @@ export function SessionHandler() {
 
         // Si no hay sesión y el usuario estaba autenticado, limpiar el estado
         if (!data.session && !loading && user) {
-          console.log("Sesión expirada, limpiando estado")
+          // console.log("Sesión expirada, limpiando estado")
 
           // Limpiar cookies de autenticación
           document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"

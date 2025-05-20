@@ -25,7 +25,7 @@ export function AuthSync() {
           credentials: "include",
         })
 
-        console.log("Datos de autenticación sincronizados con el servidor")
+        // console.log("Datos de autenticación sincronizados con el servidor")
       } catch (error) {
         console.error("Error al sincronizar datos de autenticación:", error)
       }

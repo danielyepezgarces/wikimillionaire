@@ -4,12 +4,12 @@ import { decrypt } from "@/lib/crypto"
 
 export async function GET(request: Request) {
   try {
-    console.log("Endpoint /api/auth/me llamado")
+    // console.log("Endpoint /api/auth/me llamado")
 
     // Obtener todas las cookies para depuración
     const cookieStore = cookies()
     const allCookies = cookieStore.getAll()
-    console.log(
+    // console.log(
       "Todas las cookies disponibles:",
       allCookies.map((c) => c.name),
     )
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const localStorageUser = request.headers.get("X-LocalStorage-User")
 
     if (localStorageUser) {
-      console.log("Se encontró header con datos de localStorage")
+      // console.log("Se encontró header con datos de localStorage")
       try {
         const userData = JSON.parse(localStorageUser)
 
@@ -46,18 +46,18 @@ export async function GET(request: Request) {
     }
 
     if (!userCookie) {
-      console.log("No se encontró la cookie 'wikimillionaire_user'")
+      // console.log("No se encontró la cookie 'wikimillionaire_user'")
 
       // Verificar si hay otras cookies relacionadas
       const sessionCookie = cookieStore.get("session")
       if (sessionCookie) {
-        console.log("Se encontró cookie 'session', intentando usarla")
+        // console.log("Se encontró cookie 'session', intentando usarla")
         try {
           const sessionData = await decrypt(sessionCookie.value)
           const sessionJson = JSON.parse(sessionData)
 
           if (sessionJson && sessionJson.user) {
-            console.log("Se encontró usuario en la cookie 'session'")
+            // console.log("Se encontró usuario en la cookie 'session'")
             return NextResponse.json(sessionJson.user)
           }
         } catch (error) {
@@ -71,21 +71,21 @@ export async function GET(request: Request) {
 
     try {
       // Intentar desencriptar la cookie
-      console.log("Desencriptando cookie 'wikimillionaire_user'")
+      // console.log("Desencriptando cookie 'wikimillionaire_user'")
       let userData
 
       // Verificar si la cookie está encriptada o es JSON plano
       try {
         userData = JSON.parse(userCookie.value)
-        console.log("Cookie en formato JSON plano")
+        // console.log("Cookie en formato JSON plano")
       } catch {
         // Si no es JSON plano, intentar desencriptar
         const decryptedUser = await decrypt(userCookie.value)
         userData = JSON.parse(decryptedUser)
-        console.log("Cookie desencriptada correctamente")
+        // console.log("Cookie desencriptada correctamente")
       }
 
-      console.log("Usuario encontrado en cookie:", userData ? "Sí" : "No")
+      // console.log("Usuario encontrado en cookie:", userData ? "Sí" : "No")
 
       if (!userData) {
         return NextResponse.json({ error: "Datos de usuario inválidos" }, { status: 401 })

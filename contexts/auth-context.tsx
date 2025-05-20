@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (response.ok) {
-        console.log("Usuario sincronizado con el servidor correctamente")
+        // console.log("Usuario sincronizado con el servidor correctamente")
       } else {
         console.error("Error al sincronizar usuario con el servidor:", response.status)
       }
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkSession = async () => {
     try {
       setLoading(true)
-      console.log("Verificando sesión... (intento " + (retryCount + 1) + ")")
+      // console.log("Verificando sesión... (intento " + (retryCount + 1) + ")")
 
       // Obtener usuario de localStorage primero
       const localUser = getUserFromLocalStorage()
@@ -143,17 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           credentials: "include", // Importante para incluir cookies
         })
 
-        console.log("Respuesta de /api/auth/me:", response.status)
+        // console.log("Respuesta de /api/auth/me:", response.status)
 
         if (response.ok) {
           const userData = await response.json()
-          console.log("Usuario obtenido de la API:", userData)
+          // console.log("Usuario obtenido de la API:", userData)
           setUser(userData)
           saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
           setDebugInfo((prev: any) => ({ ...prev, userData, source: "api" }))
           return
         } else if (response.status === 401) {
-          console.log("No autenticado según la API")
+          // console.log("No autenticado según la API")
         } else {
           console.error("Error al verificar sesión:", response.status)
         }
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Si no hay usuario en la API pero sí en localStorage, usarlo
       if (localUser) {
-        console.log("Usuario obtenido de localStorage:", localUser)
+        // console.log("Usuario obtenido de localStorage:", localUser)
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
 
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Si no hay usuario ni en la API ni en localStorage, el usuario no está autenticado
-      console.log("Usuario no autenticado")
+      // console.log("Usuario no autenticado")
       setUser(null)
       setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
 
@@ -197,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
-    console.log("AuthProvider: Inicializando...")
+    // console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
@@ -271,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
-      console.log("Token obtenido correctamente")
+      // console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
-      console.log("Datos de usuario obtenidos después de login:", userData)
+      // console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
       saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
@@ -357,7 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     manualLogin,
   }
 
-  console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
+  // console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
-    console.log("URL de autorización:", authUrl)
-    console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 20) + "...")
+    // console.log("URL de autorización:", authUrl)
+    // console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 20) + "...")
 
     // Responder con redirección y cookie
     const response = NextResponse.redirect(authUrl)

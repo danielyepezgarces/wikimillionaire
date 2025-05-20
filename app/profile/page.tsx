@@ -29,7 +29,7 @@ export default function ProfilePage() {
       try {
         const storedUser = localStorage.getItem("wikimillionaire_user")
         if (storedUser && !user) {
-          console.log("Usuario encontrado en localStorage pero no en contexto, refrescando...")
+          // console.log("Usuario encontrado en localStorage pero no en contexto, refrescando...")
           refreshUser()
         }
       } catch (error) {
@@ -60,7 +60,7 @@ export default function ProfilePage() {
     const storedUser = localStorage.getItem("wikimillionaire_user")
     if (storedUser && !user) {
       localUser = JSON.parse(storedUser)
-      console.log("Usuario encontrado en localStorage:", localUser)
+      // console.log("Usuario encontrado en localStorage:", localUser)
     }
   } catch (error) {
     console.error("Error al leer localStorage:", error)
