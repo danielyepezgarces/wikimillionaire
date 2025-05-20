@@ -13,75 +13,32 @@ import { Progress } from "@/components/ui/progress"
 
 export default function ProfilePage() {
   const { locale, translations: t, changeLocale } = useLocale()
-  const { user, loading: authLoading, error: authError } = useAuth()
+  const { user } = useAuth()
   const [stats, setStats] = useState<UserStats | null>(null)
-  const [loadingStats, setLoadingStats] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
 
-  // Establecer un timeout para evitar loading infinito
+  // Verificar si estamos en el cliente
   useEffect(() => {
     setIsClient(true)
 
-    const timeout = setTimeout(() => {
-      console.log("Timeout de carga de perfil alcanzado")
-      setLoadingStats(false)
-    }, 5000) // 5 segundos máximo
-
-    setLoadingTimeout(timeout)
-
-    return () => {
-      if (timeout) {
-        clearTimeout(timeout)
-      }
+    // Si hay un usuario, cargar sus estadísticas
+    if (user) {
+      fetchStats(user.id)
     }
-  }, [])
+  }, [user])
 
-  // Cargar estadísticas del usuario
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return
-
-      try {
-        setLoadingStats(true)
-        setError(null)
-
-        const response = await fetch(`/api/stats?userId=${user.id}`)
-
-        if (!response.ok) {
-          throw new Error(`Error al obtener estadísticas: ${response.status}`)
-        }
-
+  // Función para cargar estadísticas
+  const fetchStats = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/stats?userId=${userId}`)
+      if (response.ok) {
         const data = await response.json()
         setStats(data)
-      } catch (error) {
-        console.error("Error al cargar estadísticas:", error)
-        setError(error instanceof Error ? error.message : "Error desconocido al cargar estadísticas")
-      } finally {
-        setLoadingStats(false)
-
-        // Limpiar el timeout ya que terminamos correctamente
-        if (loadingTimeout) {
-          clearTimeout(loadingTimeout)
-          setLoadingTimeout(null)
-        }
       }
+    } catch (error) {
+      console.error("Error al cargar estadísticas:", error)
     }
-
-    if (user && isClient) {
-      fetchStats()
-    }
-  }, [user, isClient, loadingTimeout])
-
-  // Limpiar el timeout al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-      }
-    }
-  }, [loadingTimeout])
+  }
 
   // Función para obtener el icono de un logro
   const getAchievementIcon = (iconName: string) => {
@@ -109,54 +66,15 @@ export default function ProfilePage() {
   }
 
   const handleNavigation = (path: string) => {
-    if (isClient) {
-      window.location.href = path
-    }
+    window.location.href = path
   }
 
-  // Forzar la finalización del loading después de 5 segundos
-  const loading = authLoading || loadingStats
-
+  // Si no estamos en el cliente, no renderizar nada
   if (!isClient) {
-    return null // No renderizar nada en el servidor
+    return null
   }
 
-  if (loading && isClient) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
-        <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
-          <h1 className="mb-4 text-xl font-bold">Cargando perfil...</h1>
-          <div className="flex justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || authError) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
-        <div className="w-full max-w-md rounded-lg border border-red-700 bg-purple-900/70 p-6 text-white">
-          <h1 className="mb-4 text-xl font-bold text-red-400">Error</h1>
-          <p className="text-gray-300">{error || authError}</p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Button onClick={() => window.location.reload()} className="bg-yellow-500 text-black hover:bg-yellow-600">
-              Intentar de nuevo
-            </Button>
-            <Button
-              onClick={() => handleNavigation("/")}
-              variant="outline"
-              className="border-purple-700 text-white hover:bg-purple-800/50"
-            >
-              Volver al inicio
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // Si no hay usuario, mostrar mensaje de acceso denegado
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
