@@ -6,6 +6,7 @@ import { LogIn, LogOut, User, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { Translations } from "@/lib/i18n"
 import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
 
 interface WikimediaLoginButtonProps {
   t: Translations
@@ -64,28 +65,21 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     try {
       setIsLoggingOut(true)
       await logout()
+      // El logout ya redirige a la página principal
     } catch (error) {
       // Error silencioso
       setIsLoggingOut(false)
     }
   }
 
-  const handleProfileClick = () => {
-    try {
-      setIsMenuOpen(false)
-      router.push("/profile")
-    } catch (error) {
-      // Error silencioso
-    }
+  const navigateToProfile = () => {
+    setIsMenuOpen(false)
+    window.location.href = "/profile"
   }
 
-  const handleSettingsClick = () => {
-    try {
-      setIsMenuOpen(false)
-      router.push("/settings")
-    } catch (error) {
-      // Error silencioso
-    }
+  const navigateToSettings = () => {
+    setIsMenuOpen(false)
+    window.location.href = "/settings"
   }
 
   const toggleMenu = () => {
@@ -138,20 +132,22 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
             </div>
             <div className="border-t border-purple-700"></div>
             <div className="py-1">
-              <button
+              <Link
+                href="/profile"
                 className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
-                onClick={handleProfileClick}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
-              </button>
-              <button
+              </Link>
+              <Link
+                href="/settings"
                 className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
-                onClick={handleSettingsClick}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configuración</span>
-              </button>
+              </Link>
             </div>
             <div className="border-t border-purple-700"></div>
             <div className="py-1">
