@@ -1,10 +1,20 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
-export default function AuthCallbackPage() {
+// Envolver el componente principal en un Suspense
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div>Procesando autenticación...</div>}>
+      <CallbackContent />
+    </Suspense>
+  )
+}
+
+// Componente que contiene el contenido real de la página
+function CallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
@@ -35,170 +45,65 @@ export default function AuthCallbackPage() {
           return
         }
 
-        setStatus("Obteniendo token de acceso...")
-        console.log("Obteniendo token desde el endpoint de callback...")
+        setStatus("Verificando estado de autenticación...")
 
-        // Obtener la cookie con el codeVerifier
-        const getCookie = (name: string) => {
-          const value = `; ${document.cookie}`
-          const parts = value.split(`; ${name}=`)
-          if (parts.length === 2) {
-            const cookieValue = parts.pop()?.split(";").shift()
-            return cookieValue
-          }
-          return null
-        }
+        // Obtener el estado y codeVerifier de localStorage
+        const savedState = localStorage.getItem("wikimillionaire_oauth_state")
+        const codeVerifier = localStorage.getItem("wikimillionaire_oauth_code_verifier")
+        const timestamp = localStorage.getItem("wikimillionaire_oauth_timestamp")
 
-        // Listar todas las cookies para depuración
-        console.log("Todas las cookies:", document.cookie)
+        console.log("Estado guardado:", savedState)
+        console.log("Estado recibido:", state)
+        console.log("CodeVerifier guardado:", codeVerifier ? "Presente" : "Ausente")
 
-        const cookieValue = getCookie("wikimedia_auth_state")
-        console.log("Cookie encontrada:", cookieValue ? "Sí" : "No")
-
-        if (!cookieValue) {
-          console.error("No se encontró la cookie de estado")
-
-          // Intentar obtener la cookie del localStorage como fallback
-          const localStorageValue = localStorage.getItem("wikimedia_auth_state")
-
-          if (localStorageValue) {
-            console.log("Se encontró el estado en localStorage")
-
-            try {
-              const parsedValue = JSON.parse(localStorageValue)
-
-              // Verificar que el state coincida
-              if (parsedValue.state !== state) {
-                console.error("El state en localStorage no coincide, posible ataque CSRF")
-                setError("Error de seguridad: el estado no coincide")
-                return
-              }
-
-              // Continuar con el flujo usando el valor de localStorage
-              await processAuthentication(code, parsedValue.codeVerifier, parsedValue.returnTo)
-              return
-            } catch (e) {
-              console.error("Error al parsear el valor de localStorage:", e)
-            }
-          }
-
-          // Si no se encuentra la cookie ni en localStorage, intentar continuar con un codeVerifier generado
-          console.log("Intentando continuar sin codeVerifier...")
-
-          // Generar un codeVerifier aleatorio como último recurso
-          // Esto no es seguro, pero es mejor que fallar completamente
-          const generatedCodeVerifier = state + "_fallback_verifier"
-
-          try {
-            await processAuthentication(code, generatedCodeVerifier, "/")
-            return
-          } catch (e) {
-            console.error("Error al intentar con codeVerifier generado:", e)
-            setError("No se encontró la información de autenticación. Por favor, intenta iniciar sesión nuevamente.")
-            return
-          }
-        }
-
-        let parsedCookie
-        try {
-          parsedCookie = JSON.parse(decodeURIComponent(cookieValue))
-          console.log("Cookie parseada correctamente:", {
-            state: parsedCookie.state ? "presente" : "ausente",
-            codeVerifier: parsedCookie.codeVerifier ? "presente" : "ausente",
-            returnTo: parsedCookie.returnTo,
-          })
-        } catch (e) {
-          console.error("Error al parsear la cookie:", e)
-          setError("Error al procesar la información de autenticación")
-          return
-        }
-
-        // Verificar que el state coincida
-        if (parsedCookie.state !== state) {
-          console.error("El state no coincide, posible ataque CSRF")
-          console.log("State esperado:", state)
-          console.log("State recibido:", parsedCookie.state)
+        // Verificar que el estado coincida
+        if (!savedState || savedState !== state) {
+          console.error("El estado no coincide o no se encontró")
+          console.log("Estado guardado:", savedState)
+          console.log("Estado recibido:", state)
           setError("Error de seguridad: el estado no coincide")
           return
         }
 
-        await processAuthentication(code, parsedCookie.codeVerifier, parsedCookie.returnTo)
+        // Verificar que el codeVerifier exista
+        if (!codeVerifier) {
+          console.error("No se encontró el codeVerifier")
+          setError("Error de autenticación: falta información necesaria")
+          return
+        }
+
+        // Verificar que no haya expirado (30 minutos)
+        if (timestamp) {
+          const elapsed = Date.now() - Number.parseInt(timestamp)
+          if (elapsed > 30 * 60 * 1000) {
+            // 30 minutos
+            console.error("El estado ha expirado")
+            setError("Error de autenticación: el proceso ha expirado, intente nuevamente")
+            return
+          }
+        }
+
+        setStatus("Procesando autenticación...")
+
+        // Llamar a la función login del contexto
+        await login(code, codeVerifier)
+
+        // Limpiar localStorage después de un login exitoso
+        localStorage.removeItem("wikimillionaire_oauth_state")
+        localStorage.removeItem("wikimillionaire_oauth_code_verifier")
+        localStorage.removeItem("wikimillionaire_oauth_timestamp")
+
+        setStatus("Autenticación exitosa, redirigiendo...")
+
+        // Redirigir al usuario a la página principal
+        setTimeout(() => {
+          router.push("/")
+        }, 1000)
       } catch (err: any) {
         console.error("Error en callback de autenticación:", err)
         setError(err.message || "Error al procesar la autenticación")
       } finally {
         setLoading(false)
-      }
-    }
-
-    // Función para procesar la autenticación
-    const processAuthentication = async (code: string, codeVerifier: string, returnTo: string) => {
-      try {
-        // Llamar al endpoint de token para obtener el token
-        setStatus("Obteniendo token de acceso...")
-        const tokenResponse = await fetch("/api/auth/token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            code,
-            codeVerifier,
-          }),
-        })
-
-        if (!tokenResponse.ok) {
-          let errorMsg = "Error al obtener el token"
-          try {
-            const data = await tokenResponse.json()
-            errorMsg = data.error || errorMsg
-          } catch {
-            // No hay JSON en respuesta
-          }
-          throw new Error(errorMsg)
-        }
-
-        const tokenData = await tokenResponse.json()
-        console.log("Token obtenido correctamente")
-
-        setStatus("Obteniendo información del usuario...")
-
-        // Obtener información del usuario
-        const userInfoResponse = await fetch("/api/auth/user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken: tokenData.access_token,
-          }),
-        })
-
-        if (!userInfoResponse.ok) {
-          let errorMsg = "Error al obtener información del usuario"
-          try {
-            const data = await userInfoResponse.json()
-            errorMsg = data.error || errorMsg
-          } catch {
-            // No hay JSON en respuesta
-          }
-          throw new Error(errorMsg)
-        }
-
-        const userData = await userInfoResponse.json()
-        console.log("Usuario autenticado correctamente")
-
-        setStatus("Redirigiendo...")
-
-        // Limpiar el localStorage si se usó como fallback
-        localStorage.removeItem("wikimedia_auth_state")
-
-        // Redirigir al usuario a la página principal
-        setTimeout(() => {
-          window.location.href = returnTo || "/"
-        }, 1000)
-      } catch (error) {
-        throw error
       }
     }
 
@@ -227,14 +132,16 @@ export default function AuthCallbackPage() {
           <p className="text-gray-300">{error}</p>
           <p className="mt-4 text-sm text-gray-400">Por favor, intenta iniciar sesión nuevamente.</p>
           <button
-            onClick={() => (window.location.href = "/api/auth/wikimedia")}
+            onClick={() => {
+              // Limpiar localStorage antes de intentar nuevamente
+              localStorage.removeItem("wikimillionaire_oauth_state")
+              localStorage.removeItem("wikimillionaire_oauth_code_verifier")
+              localStorage.removeItem("wikimillionaire_oauth_timestamp")
+
+              // Redirigir al inicio de sesión
+              window.location.href = "/"
+            }}
             className="mt-4 w-full rounded-md bg-yellow-500 py-2 text-black hover:bg-yellow-600"
-          >
-            Iniciar sesión con Wikimedia
-          </button>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-2 w-full rounded-md border border-purple-700 bg-transparent py-2 text-white hover:bg-purple-800/50"
           >
             Volver al inicio
           </button>

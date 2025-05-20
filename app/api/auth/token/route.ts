@@ -5,14 +5,19 @@ export async function POST(request: NextRequest) {
     const { code, codeVerifier } = await request.json()
 
     if (!code || !codeVerifier) {
+      console.error("Faltan parámetros requeridos:", { code: !!code, codeVerifier: !!codeVerifier })
       return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 })
     }
+
+    console.log("Procesando solicitud de token con código:", code.substring(0, 10) + "...")
+    console.log("CodeVerifier presente:", !!codeVerifier)
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID
     const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
     const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
     if (!clientId || !clientSecret) {
+      console.error("Faltan variables de entorno para la autenticación")
       return NextResponse.json({ error: "Faltan variables de entorno para la autenticación" }, { status: 500 })
     }
 

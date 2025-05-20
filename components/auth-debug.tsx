@@ -8,6 +8,7 @@ export function AuthDebug() {
   const { user, loading, error, refreshUser, debugInfo } = useAuth()
   const [showDebug, setShowDebug] = useState(false)
   const [showCookies, setShowCookies] = useState(false)
+  const [showLocalStorage, setShowLocalStorage] = useState(false)
   const [loadingTime, setLoadingTime] = useState(0)
   const [wikimediaId, setWikimediaId] = useState("")
   const [username, setUsername] = useState("")
@@ -37,6 +38,10 @@ export function AuthDebug() {
     setShowCookies(!showCookies)
   }
 
+  const handleShowLocalStorage = () => {
+    setShowLocalStorage(!showLocalStorage)
+  }
+
   const handleCreateManualUser = async () => {
     try {
       if (!wikimediaId) {
@@ -44,31 +49,58 @@ export function AuthDebug() {
         return
       }
 
-      const response = await fetch("/api/auth/manual-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          wikimediaId,
-          username: username || "Usuario",
-          email: null,
-        }),
-      })
-
-      const data = await response.json()
-      console.log("Respuesta de manual-login:", data)
-
-      if (response.ok) {
-        alert("Usuario creado manualmente. Recargando página...")
-        window.location.reload()
-      } else {
-        alert(`Error al crear usuario: ${data.error}`)
+      // Crear un usuario manualmente en localStorage
+      const user = {
+        id: `user_${Date.now()}`,
+        username: username || "Usuario",
+        wikimedia_id: wikimediaId,
+        email: null,
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString(),
       }
+
+      localStorage.setItem("wikimillionaire_user", JSON.stringify(user))
+      alert("Usuario creado manualmente en localStorage. Recargando página...")
+      window.location.reload()
     } catch (error) {
       console.error("Error al crear usuario manualmente:", error)
       alert(`Error al crear usuario: ${error}`)
     }
+  }
+
+  const handleClearAll = () => {
+    // Limpiar localStorage
+    localStorage.removeItem("wikimillionaire_user")
+    localStorage.removeItem("wikimillionaire_oauth_state")
+    localStorage.removeItem("wikimillionaire_oauth_code_verifier")
+    localStorage.removeItem("wikimillionaire_oauth_timestamp")
+
+    // Limpiar todas las cookies relacionadas
+    document.cookie = "wikimillionaire_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+
+    alert("Se han limpiado todas las cookies y localStorage. Recargando página...")
+    window.location.reload()
+  }
+
+  const getLocalStorageItems = () => {
+    if (typeof window === "undefined") return {}
+
+    const items: Record<string, any> = {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key) {
+        try {
+          const value = localStorage.getItem(key)
+          items[key] = value
+        } catch (e) {
+          items[key] = "Error al leer valor"
+        }
+      }
+    }
+    return items
   }
 
   if (!showDebug) {
@@ -114,18 +146,10 @@ export function AuthDebug() {
         <Button variant="outline" size="sm" onClick={handleShowCookies}>
           {showCookies ? "Ocultar Cookies" : "Mostrar Cookies"}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            localStorage.clear()
-            sessionStorage.clear()
-            document.cookie.split(";").forEach((c) => {
-              document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-            })
-            window.location.reload()
-          }}
-        >
+        <Button variant="outline" size="sm" onClick={handleShowLocalStorage}>
+          {showLocalStorage ? "Ocultar LocalStorage" : "Mostrar LocalStorage"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleClearAll}>
           Limpiar Todo
         </Button>
       </div>
@@ -134,6 +158,15 @@ export function AuthDebug() {
         <div className="mb-2">
           <strong>Cookies:</strong>
           <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">{document.cookie || "No hay cookies"}</pre>
+        </div>
+      )}
+
+      {showLocalStorage && (
+        <div className="mb-2">
+          <strong>LocalStorage:</strong>
+          <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">
+            {JSON.stringify(getLocalStorageItems(), null, 2)}
+          </pre>
         </div>
       )}
 

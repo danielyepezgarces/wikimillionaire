@@ -24,7 +24,7 @@ interface WikimediaLoginButtonProps {
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, loading, refreshUser } = useAuth()
+  const { user, loading, refreshUser, logout, getAuthUrl } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -39,8 +39,12 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      // Redirigir al endpoint de redirección
-      window.location.href = `/api/auth/wikimedia?returnTo=${encodeURIComponent(pathname)}`
+
+      // Obtener la URL de autenticación
+      const authUrl = await getAuthUrl()
+
+      // Redirigir al usuario
+      window.location.href = authUrl
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
       setIsLoggingIn(false)
@@ -50,10 +54,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      // Limpiar cookies de autenticación
-      document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      // Redirigir a la página principal
-      window.location.href = "/api/auth/logout"
+      await logout()
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
       setIsLoggingOut(false)
