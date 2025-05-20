@@ -59,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const lastUpdate = Number.parseInt(lastUpdateStr, 10)
         const now = Date.now()
         if (now - lastUpdate > SESSION_EXPIRY) {
-          console.log("Sesión expirada por tiempo (24 horas)")
           localStorage.removeItem("wikimillionaire_user")
           localStorage.removeItem("wikimillionaire_last_update")
           return null
@@ -155,7 +154,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
