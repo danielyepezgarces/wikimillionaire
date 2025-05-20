@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
   const [isInitialized, setIsInitialized] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
 
   // Constantes para configuración
   const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 horas de duración de sesión
@@ -143,6 +144,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
 
+      // Establecer un timeout para evitar loading infinito
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+
+      const timeout = setTimeout(() => {
+        setLoading(false)
+        setIsInitialized(true)
+      }, 5000) // 5 segundos máximo
+
+      setLoadingTimeout(timeout)
+
+
       // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
 
@@ -153,6 +167,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
       }
+
+      // Limpiar el timeout ya que terminamos correctamente
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+        setLoadingTimeout(null)
+      }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
@@ -161,8 +181,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
       setIsInitialized(true)
+
+      // Asegurarse de limpiar el timeout
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+        setLoadingTimeout(null)
+      }
     }
   }
+
+  // Limpiar el timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+    }
+  }, [loadingTimeout])
 
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
