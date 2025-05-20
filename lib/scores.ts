@@ -1,4 +1,4 @@
-import { createSupabaseClient, query } from "@/lib/supabase"
+import { query } from "@/lib/supabase"
 
 // Tipo para las estadísticas del usuario
 export type UserStats = {
@@ -28,11 +28,20 @@ export type RankingResetInfo = {
   formattedNextReset: string
 }
 
+// Tipo para las entradas del leaderboard
+export type LeaderboardEntry = {
+  rank: number
+  userId: string
+  username: string
+  avatarUrl: string | null
+  score: number
+  gamesPlayed: number
+  lastPlayed: string
+}
+
 // Función para guardar una puntuación
 export async function saveScore(userId: string, score: number) {
   try {
-    const supabase = createSupabaseClient()
-
     // Insertar la puntuación en la base de datos
     const result = await query(
       `INSERT INTO scores (user_id, score, created_at) 
@@ -47,57 +56,179 @@ export async function saveScore(userId: string, score: number) {
     return result[0]
   } catch (error) {
     console.error("Error al guardar puntuación:", error)
+    // Guardar en localStorage como fallback
+    if (typeof window !== "undefined") {
+      try {
+        const user = JSON.parse(localStorage.getItem("wikimillionaire_user") || "{}")
+        if (user && user.username) {
+          saveScoreToLocalStorage(user.username, score)
+        }
+      } catch (e) {
+        console.error("Error al guardar en localStorage:", e)
+      }
+    }
     throw error
   }
 }
 
 // Función para obtener la tabla de clasificación
-export async function getLeaderboard(period: "daily" | "weekly" | "monthly" | "all" = "all", limit = 10) {
+export async function getLeaderboard(
+  period: "daily" | "weekly" | "monthly" | "all" = "all",
+  limit = 10,
+): Promise<LeaderboardEntry[]> {
   try {
-    let timeFilter = ""
-    const now = new Date()
-
-    if (period === "daily") {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-      timeFilter = `WHERE s.created_at >= '${today}'`
-    } else if (period === "weekly") {
-      const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString()
-      timeFilter = `WHERE s.created_at >= '${weekAgo}'`
-    } else if (period === "monthly") {
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      timeFilter = `WHERE s.created_at >= '${monthStart}'`
+    // Si estamos en el cliente y no hay conexión a la base de datos, usar localStorage
+    if (typeof window !== "undefined") {
+      try {
+        // Intentar obtener datos de la base de datos
+        const entries = await getLeaderboardFromDB(period, limit)
+        return entries
+      } catch (dbError) {
+        console.error("Error al obtener leaderboard de la base de datos:", dbError)
+        // Si falla, intentar obtener datos de localStorage
+        return getLeaderboardFromLocalStorage(period, limit)
+      }
+    } else {
+      // En el servidor, solo intentar obtener datos de la base de datos
+      return await getLeaderboardFromDB(period, limit)
     }
-
-    // Modificado para sumar las puntuaciones por usuario en el período
-    const result = await query(
-      `SELECT 
-        u.id as user_id, 
-        u.username, 
-        u.avatar_url, 
-        SUM(s.score) as total_score, 
-        COUNT(s.id) as games_played,
-        MAX(s.created_at) as last_played
-       FROM scores s
-       JOIN users u ON s.user_id = u.id
-       ${timeFilter}
-       GROUP BY u.id, u.username, u.avatar_url
-       ORDER BY total_score DESC, games_played DESC
-       LIMIT $1`,
-      [limit],
-    )
-
-    return result.map((row, index) => ({
-      rank: index + 1,
-      userId: row.user_id,
-      username: row.username,
-      avatarUrl: row.avatar_url,
-      score: Number.parseInt(row.total_score), // Cambiado de highestScore a score (suma total)
-      gamesPlayed: Number.parseInt(row.games_played),
-      lastPlayed: row.last_played,
-    }))
   } catch (error) {
     console.error("Error al obtener tabla de clasificación:", error)
-    throw error
+    // Si estamos en el cliente, intentar obtener datos de localStorage como último recurso
+    if (typeof window !== "undefined") {
+      return getLeaderboardFromLocalStorage(period, limit)
+    }
+    // Si todo falla, devolver un array vacío
+    return []
+  }
+}
+
+// Función para obtener la tabla de clasificación desde la base de datos
+async function getLeaderboardFromDB(
+  period: "daily" | "weekly" | "monthly" | "all" = "all",
+  limit = 10,
+): Promise<LeaderboardEntry[]> {
+  let timeFilter = ""
+  const now = new Date()
+
+  if (period === "daily") {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    timeFilter = `WHERE s.created_at >= '${today}'`
+  } else if (period === "weekly") {
+    const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString()
+    timeFilter = `WHERE s.created_at >= '${weekAgo}'`
+  } else if (period === "monthly") {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    timeFilter = `WHERE s.created_at >= '${monthStart}'`
+  }
+
+  // Modificado para sumar las puntuaciones por usuario en el período
+  const result = await query(
+    `SELECT 
+      u.id as user_id, 
+      u.username, 
+      u.avatar_url, 
+      SUM(s.score) as total_score, 
+      COUNT(s.id) as games_played,
+      MAX(s.created_at) as last_played
+     FROM scores s
+     JOIN users u ON s.user_id = u.id
+     ${timeFilter}
+     GROUP BY u.id, u.username, u.avatar_url
+     ORDER BY total_score DESC, games_played DESC
+     LIMIT $1`,
+    [limit],
+  )
+
+  return result.map((row, index) => ({
+    rank: index + 1,
+    userId: row.user_id,
+    username: row.username,
+    avatarUrl: row.avatar_url,
+    score: Number.parseInt(row.total_score) || 0,
+    gamesPlayed: Number.parseInt(row.games_played) || 0,
+    lastPlayed: row.last_played,
+  }))
+}
+
+// Función para obtener la tabla de clasificación desde localStorage
+function getLeaderboardFromLocalStorage(
+  period: "daily" | "weekly" | "monthly" | "all" = "all",
+  limit = 10,
+): LeaderboardEntry[] {
+  try {
+    const scoresJson = localStorage.getItem("wikimillionaire-scores")
+    if (!scoresJson) return []
+
+    const scores = JSON.parse(scoresJson)
+    const now = new Date()
+
+    // Filtrar puntuaciones según el período
+    let filteredScores = [...scores]
+    if (period === "daily") {
+      filteredScores = scores.filter((score: any) => {
+        const scoreDate = new Date(score.date)
+        return scoreDate.toDateString() === now.toDateString()
+      })
+    } else if (period === "weekly") {
+      filteredScores = scores.filter((score: any) => {
+        const scoreDate = new Date(score.date)
+        const dayDiff = Math.floor((now.getTime() - scoreDate.getTime()) / (1000 * 60 * 60 * 24))
+        return dayDiff < 7
+      })
+    } else if (period === "monthly") {
+      filteredScores = scores.filter((score: any) => {
+        const scoreDate = new Date(score.date)
+        return scoreDate.getMonth() === now.getMonth() && scoreDate.getFullYear() === now.getFullYear()
+      })
+    }
+
+    // Agrupar puntuaciones por usuario y sumarlas
+    const userScores: Record<
+      string,
+      { username: string; totalScore: number; gamesPlayed: number; lastPlayed: string }
+    > = {}
+
+    filteredScores.forEach((score: any) => {
+      const username = score.username
+      if (!userScores[username]) {
+        userScores[username] = {
+          username,
+          totalScore: 0,
+          gamesPlayed: 0,
+          lastPlayed: score.date,
+        }
+      }
+
+      userScores[username].totalScore += score.score
+      userScores[username].gamesPlayed += 1
+
+      // Actualizar última partida si es más reciente
+      const currentDate = new Date(userScores[username].lastPlayed)
+      const scoreDate = new Date(score.date)
+      if (scoreDate > currentDate) {
+        userScores[username].lastPlayed = score.date
+      }
+    })
+
+    // Convertir a array y ordenar
+    const leaderboard = Object.values(userScores)
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, limit)
+      .map((entry, index) => ({
+        rank: index + 1,
+        userId: `local_${entry.username}`,
+        username: entry.username,
+        avatarUrl: null,
+        score: entry.totalScore,
+        gamesPlayed: entry.gamesPlayed,
+        lastPlayed: entry.lastPlayed,
+      }))
+
+    return leaderboard
+  } catch (error) {
+    console.error("Error al obtener leaderboard de localStorage:", error)
+    return []
   }
 }
 
