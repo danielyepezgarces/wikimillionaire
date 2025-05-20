@@ -3,28 +3,25 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { LogIn, LogOut, User, Settings } from "lucide-react"
-import { useRouter } from "next/navigation"
 import type { Translations } from "@/lib/i18n"
 import { useAuth } from "@/contexts/auth-context"
-import Link from "next/link"
 
 interface WikimediaLoginButtonProps {
   t: Translations
 }
 
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
-  const router = useRouter()
   const { user, loading, refreshUser, logout, getAuthUrl } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [isClient, setIsClient] = useState(false)
 
-  // Asegurarse de que el componente está montado para evitar problemas de hidratación
   useEffect(() => {
+    setIsClient(true)
     setMounted(true)
-    // Intentar refrescar el usuario al montar el componente
     try {
       refreshUser()
     } catch (error) {
@@ -32,7 +29,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     }
   }, [refreshUser])
 
-  // Cerrar el menú cuando se hace clic fuera de él
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -49,14 +45,11 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-
-      // Obtener la URL de autenticación
       const authUrl = await getAuthUrl()
-
-      // Redirigir al usuario
-      window.location.href = authUrl
+      if (isClient) {
+        window.location.href = authUrl
+      }
     } catch (error) {
-      // Error silencioso
       setIsLoggingIn(false)
     }
   }
@@ -65,33 +58,28 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     try {
       setIsLoggingOut(true)
       await logout()
-      // El logout ya redirige a la página principal
+      if (isClient) {
+        window.location.href = "/"
+      }
     } catch (error) {
-      // Error silencioso
       setIsLoggingOut(false)
     }
   }
 
-  const navigateToProfile = () => {
-    setIsMenuOpen(false)
-    window.location.href = "/profile"
-  }
-
-  const navigateToSettings = () => {
-    setIsMenuOpen(false)
-    window.location.href = "/settings"
+  const handleNavigation = (path: string) => {
+    if (isClient) {
+      window.location.href = path
+    }
   }
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
   }
 
-  // No renderizar nada hasta que el componente esté montado
   if (!mounted) {
     return null
   }
 
-  // Mostrar un indicador de carga mientras se verifica la sesión
   if (loading) {
     return (
       <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-purple-700 text-white" disabled>
@@ -102,7 +90,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   }
 
   if (user) {
-    // Extraer el nombre de usuario de forma segura
     const username = user?.username || "Usuario"
     const firstLetter = username.charAt(0).toUpperCase()
 
@@ -132,22 +119,20 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
             </div>
             <div className="border-t border-purple-700"></div>
             <div className="py-1">
-              <Link
-                href="/profile"
+              <button
                 className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => handleNavigation("/profile")}
               >
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
-              </Link>
-              <Link
-                href="/settings"
+              </button>
+              <button
                 className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => handleNavigation("/settings")}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configuración</span>
-              </Link>
+              </button>
             </div>
             <div className="border-t border-purple-700"></div>
             <div className="py-1">
