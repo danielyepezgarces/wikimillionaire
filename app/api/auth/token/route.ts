@@ -40,9 +40,13 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "WikiMillionaire/1.0 (https://wikimillionaire.vercel.app/)",
+        Accept: "application/json",
       },
       body: params.toString(),
     })
+
+    console.log("Respuesta del servidor de token:", response.status, response.statusText)
+    console.log("Headers de respuesta:", Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
       const errorText = await response.text()

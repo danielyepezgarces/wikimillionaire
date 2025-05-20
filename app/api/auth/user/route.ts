@@ -18,24 +18,72 @@ export async function POST(request: NextRequest) {
     console.log("Solicitando información de usuario a:", userInfoUrl)
 
     const userInfoResponse = await fetch(userInfoUrl, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "User-Agent": "WikiMillionaire/1.0 (https://wikimillionaire.vercel.app/)",
         Accept: "application/json",
+        "Content-Type": "application/json",
       },
     })
 
     console.log("Código de respuesta:", userInfoResponse.status)
+    console.log("Headers de respuesta:", Object.fromEntries(userInfoResponse.headers.entries()))
 
     const rawText = await userInfoResponse.text()
     console.log("Respuesta cruda:", rawText.substring(0, 200))
 
     if (!userInfoResponse.ok) {
       console.error("Error en respuesta:", rawText)
-      return NextResponse.json(
-        { error: `Error al obtener información del usuario: ${rawText}` },
-        { status: userInfoResponse.status },
-      )
+
+      // Intentar con una URL alternativa
+      console.log("Intentando con URL alternativa...")
+      const alternativeUrl = "https://meta.wikimedia.org/w/index.php?title=Special:OAuth/identify"
+
+      const alternativeResponse = await fetch(alternativeUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "User-Agent": "WikiMillionaire/1.0 (https://wikimillionaire.vercel.app/)",
+          Accept: "application/json",
+        },
+      })
+
+      console.log("Código de respuesta alternativa:", alternativeResponse.status)
+
+      const alternativeText = await alternativeResponse.text()
+      console.log("Respuesta alternativa:", alternativeText.substring(0, 200))
+
+      if (!alternativeResponse.ok) {
+        return NextResponse.json(
+          { error: `Error al obtener información del usuario: ${rawText}` },
+          { status: userInfoResponse.status },
+        )
+      }
+
+      // Intentar parsear la respuesta alternativa
+      let alternativeInfo
+      try {
+        alternativeInfo = JSON.parse(alternativeText)
+      } catch (parseError) {
+        console.error("Error al parsear JSON alternativo:", parseError)
+        return NextResponse.json(
+          { error: "Error al interpretar la respuesta alternativa de Wikimedia como JSON" },
+          { status: 502 },
+        )
+      }
+
+      // Adaptar la respuesta alternativa al formato esperado
+      const userInfo = {
+        sub: alternativeInfo.sub || alternativeInfo.username || "unknown",
+        username: alternativeInfo.username || "unknown",
+        email: alternativeInfo.email || null,
+      }
+
+      console.log("Información del usuario obtenida (alternativa):", userInfo)
+
+      // Continuar con el proceso normal
+      return await processUserInfo(userInfo)
     }
 
     let userInfo
@@ -48,6 +96,14 @@ export async function POST(request: NextRequest) {
 
     console.log("Información del usuario obtenida:", userInfo)
 
+    return await processUserInfo(userInfo)
+  } catch (error: any) {
+    console.error("Error en el endpoint de usuario:", error)
+    return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 })
+  }
+
+  // Función para procesar la información del usuario
+  async function processUserInfo(userInfo: any) {
     // Verificar que tenemos la información necesaria
     if (!userInfo.sub || !userInfo.username) {
       console.error("Información de usuario incompleta:", userInfo)
@@ -183,8 +239,5 @@ export async function POST(request: NextRequest) {
       ...userData,
       session: session?.session,
     })
-  } catch (error: any) {
-    console.error("Error en el endpoint de usuario:", error)
-    return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 })
   }
 }
