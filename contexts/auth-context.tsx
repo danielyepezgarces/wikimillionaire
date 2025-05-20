@@ -78,21 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null
       }
 
-      // Asegurarse de que tenga las propiedades mínimas necesarias
-      if (!parsedUser.id || !parsedUser.username) {
-        console.error("Datos de usuario incompletos en localStorage")
-        return null
-      }
-
-      // Asegurarse de que todas las propiedades tengan valores válidos
+      // Crear un objeto de usuario con valores predeterminados para todas las propiedades
       const validatedUser: User = {
-        id: parsedUser.id || `user_${Date.now()}`,
-        username: parsedUser.username || "Usuario",
-        wikimedia_id: parsedUser.wikimedia_id || "",
+        id: typeof parsedUser.id === "string" ? parsedUser.id : `user_${Date.now()}`,
+        username: typeof parsedUser.username === "string" ? parsedUser.username : "Usuario",
+        wikimedia_id: typeof parsedUser.wikimedia_id === "string" ? parsedUser.wikimedia_id : "",
         email: parsedUser.email || null,
         avatar_url: parsedUser.avatar_url || null,
-        created_at: parsedUser.created_at || new Date().toISOString(),
-        last_login: parsedUser.last_login || new Date().toISOString(),
+        created_at: typeof parsedUser.created_at === "string" ? parsedUser.created_at : new Date().toISOString(),
+        last_login: typeof parsedUser.last_login === "string" ? parsedUser.last_login : new Date().toISOString(),
       }
 
       return validatedUser

@@ -2,20 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { LogIn, LogOut, User, Settings } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
+import { LogIn, LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 import type { Translations } from "@/lib/i18n"
 import { useAuth } from "@/contexts/auth-context"
-import Image from "next/image"
 
 interface WikimediaLoginButtonProps {
   t: Translations
@@ -23,12 +13,10 @@ interface WikimediaLoginButtonProps {
 
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const { user, loading, refreshUser, logout, getAuthUrl } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   // Asegurarse de que el componente está montado para evitar problemas de hidratación
   useEffect(() => {
@@ -44,7 +32,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      setError(null)
 
       // Obtener la URL de autenticación
       const authUrl = await getAuthUrl()
@@ -53,7 +40,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
       window.location.href = authUrl
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
-      setError("Error al iniciar sesión")
       setIsLoggingIn(false)
     }
   }
@@ -61,30 +47,10 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      setError(null)
       await logout()
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
-      setError("Error al cerrar sesión")
       setIsLoggingOut(false)
-    }
-  }
-
-  const handleProfileClick = () => {
-    try {
-      router.push("/profile")
-    } catch (error) {
-      console.error("Error al navegar al perfil:", error)
-      setError("Error al navegar al perfil")
-    }
-  }
-
-  const handleSettingsClick = () => {
-    try {
-      router.push("/settings")
-    } catch (error) {
-      console.error("Error al navegar a configuración:", error)
-      setError("Error al navegar a configuración")
     }
   }
 
@@ -93,6 +59,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     return null
   }
 
+  console.log("WikimediaLoginButton: Estado actual:", { user, loading })
 
   // Mostrar un indicador de carga mientras se verifica la sesión
   if (loading) {
@@ -104,94 +71,46 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     )
   }
 
+  // Si el usuario está autenticado, mostrar botón de logout
   if (user) {
+    console.log("WikimediaLoginButton: Usuario autenticado:", user)
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-purple-700 overflow-hidden p-0">
-            {user.avatar_url ? (
-              <Image
-                src={user.avatar_url || "/placeholder.svg"}
-                alt={user.username}
-                width={36}
-                height={36}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-purple-800 text-white">
-                {user.username && user.username.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="sr-only">{user.username}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-purple-900 border-purple-700 text-white">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user.username || "Usuario"}</p>
-              {user.email ? (
-                <p className="text-xs leading-none text-gray-400">{user.email}</p>
-              ) : (
-                <p className="text-xs leading-none text-gray-400">Usuario de Wikidata</p>
-              )}
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-purple-700" />
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleProfileClick}
-          >
-            <User className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleSettingsClick}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configuración</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-purple-700" />
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            {isLoggingOut ? (
-              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            ) : (
-              <LogOut className="mr-2 h-4 w-4" />
-            )}
-            <span>{t.auth.logout}</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-white hidden md:inline-block">{user.username ? user.username : "Usuario"}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-white border-purple-700 hover:bg-purple-800 hover:text-white"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></span>
+          ) : (
+            <LogOut className="h-4 w-4 mr-2" />
+          )}
+          <span>{t.auth.logout}</span>
+        </Button>
+      </div>
     )
   }
 
+  // Si el usuario no está autenticado, mostrar botón de login
+  console.log("WikimediaLoginButton: Usuario no autenticado")
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full border-purple-700 text-white hover:bg-purple-800/50 hover:text-white"
-            onClick={handleLogin}
-            disabled={isLoggingIn}
-          >
-            {isLoggingIn ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            ) : (
-              <LogIn className="h-4 w-4" />
-            )}
-            <span className="sr-only">{t.auth.login}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="bg-purple-900 border-purple-700 text-white">
-          <p>{t.auth.login}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-white border-purple-700 hover:bg-purple-800 hover:text-white"
+      onClick={handleLogin}
+      disabled={isLoggingIn}
+    >
+      {isLoggingIn ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></span>
+      ) : (
+        <LogIn className="h-4 w-4 mr-2" />
+      )}
+      <span>{t.auth.login}</span>
+    </Button>
   )
 }
