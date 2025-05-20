@@ -1,16 +1,14 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { createSupabaseClient } from "@/lib/supabase"
 
 export function SessionHandler() {
   const { user, loading, refreshUser } = useAuth()
-  const router = useRouter()
   const pathname = usePathname()
   const [lastChecked, setLastChecked] = useState<number>(Date.now())
-  const isRedirecting = useRef(false)
 
   // Ignorar rutas de autenticación para evitar bucles
   const isAuthRoute = pathname.includes("/auth/callback") || pathname.includes("/api/auth")
@@ -23,31 +21,31 @@ export function SessionHandler() {
 
     // Verificar la sesión cuando el componente se monta
     const checkSession = async () => {
-      // Si ya estamos redirigiendo, no hacer nada
-      if (isRedirecting.current) {
-        return
+      try {
+        console.log("Verificando sesión...")
+        const supabase = createSupabaseClient()
+        const { data, error } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error("Error al verificar la sesión:", error)
+          return
+        }
+
+        // Si no hay sesión y el usuario estaba autenticado, limpiar el estado
+        if (!data.session && !loading && user) {
+          console.log("Sesión expirada, limpiando estado")
+
+          // Limpiar cookies de autenticación
+          document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+
+          // Recargar la página para actualizar el estado
+          window.location.reload()
+        }
+
+        setLastChecked(Date.now())
+      } catch (err) {
+        console.error("Error al verificar la sesión:", err)
       }
-
-      const supabase = createSupabaseClient()
-      const { data, error } = await supabase.auth.getSession()
-
-      if (error) {
-        console.error("Error al verificar la sesión:", error)
-        return
-      }
-
-      // Si no hay sesión y el usuario estaba autenticado, redirigir al login
-      if (!data.session && !loading && user) {
-        console.log("Sesión expirada, redirigiendo al login")
-        isRedirecting.current = true
-
-        // Usar un timeout para evitar múltiples redirecciones
-        setTimeout(() => {
-          window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(pathname)}`
-        }, 100)
-      }
-
-      setLastChecked(Date.now())
     }
 
     // Solo verificar después de que la carga inicial haya terminado
@@ -56,15 +54,12 @@ export function SessionHandler() {
     }
 
     // Verificar la sesión periódicamente, pero con menos frecuencia
-    const intervalId = setInterval(
-      () => {
-        // Solo verificar si ha pasado al menos 10 minutos desde la última verificación
-        if (!isAuthRoute && !loading && Date.now() - lastChecked > 10 * 60 * 1000) {
-          checkSession()
-        }
-      },
-      5 * 60 * 1000,
-    ) // Verificar cada 5 minutos
+    const intervalId = setInterval(() => {
+      // Solo verificar si ha pasado al menos 5 minutos desde la última verificación
+      if (!isAuthRoute && !loading && Date.now() - lastChecked > 5 * 60 * 1000) {
+        checkSession()
+      }
+    }, 60 * 1000) // Verificar cada minuto
 
     return () => clearInterval(intervalId)
   }, [user, loading, pathname, lastChecked, isAuthRoute])
@@ -81,8 +76,7 @@ export function SessionHandler() {
         document.visibilityState === "visible" &&
         !isAuthRoute &&
         !loading &&
-        !isRedirecting.current &&
-        Date.now() - lastChecked > 10 * 60 * 1000
+        Date.now() - lastChecked > 5 * 60 * 1000
       ) {
         refreshUser()
         setLastChecked(Date.now())
