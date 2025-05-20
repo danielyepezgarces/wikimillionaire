@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -11,7 +11,6 @@ export default function AuthCallbackPage() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<string>("Iniciando proceso de autenticación...")
   const { login } = useAuth()
-  const isRedirecting = useRef(false)
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -54,22 +53,8 @@ export default function AuthCallbackPage() {
         console.log("Cookie encontrada:", cookieValue ? "Sí" : "No")
 
         if (!cookieValue) {
-          console.error("No se encontró la cookie de estado, redirigiendo al login")
-          setStatus("Redirigiendo al inicio de sesión...")
-
-          // Evitar bucles de redirección
-          if (isRedirecting.current) {
-            setError("Error: Bucle de redirección detectado. Por favor, intenta iniciar sesión manualmente.")
-            return
-          }
-
-          isRedirecting.current = true
-
-          // Redirigir al usuario al login a través del endpoint del servidor
-          setTimeout(() => {
-            window.location.href = "/api/auth/wikimedia"
-          }, 2000)
-
+          console.error("No se encontró la cookie de estado")
+          setError("No se encontró la información de autenticación. Por favor, intenta iniciar sesión nuevamente.")
           return
         }
 
