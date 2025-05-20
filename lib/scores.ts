@@ -490,7 +490,6 @@ async function unlockAchievement(userId: string, achievementId: string) {
         [userId, achievementId],
       )
 
-      console.log(`Logro "${achievementId}" desbloqueado para el usuario ${userId}`)
     }
   } catch (error) {
     console.error(`Error al desbloquear logro ${achievementId}:`, error)
