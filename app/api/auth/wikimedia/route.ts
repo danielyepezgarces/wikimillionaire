@@ -44,18 +44,42 @@ export async function GET(request: NextRequest) {
       `&code_challenge_method=S256`
 
     console.log("URL de autorización Wikimedia:", authUrl.substring(0, 100) + "...")
-    console.log("Estableciendo cookie wikimedia_auth_state")
+    console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 50) + "...")
 
-    // Responder con redirección y cookie
-    const response = NextResponse.redirect(authUrl)
+    // Crear una página HTML que almacene el estado en localStorage y luego redirija
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Redirigiendo a Wikimedia...</title>
+        <script>
+          // Almacenar el estado en localStorage como fallback
+          localStorage.setItem('wikimedia_auth_state', '${cookieValue.replace(/'/g, "\\'")}');
+          
+          // Redirigir a Wikimedia
+          window.location.href = "${authUrl}";
+        </script>
+      </head>
+      <body>
+        <p>Redirigiendo a Wikimedia...</p>
+      </body>
+      </html>
+    `
+
+    // Responder con la página HTML
+    const response = new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html",
+      },
+    })
 
     // Configurar la cookie con opciones más permisivas
     response.cookies.set("wikimedia_auth_state", cookieValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 30, // 30 minutos
-      path: "/",
-      sameSite: "lax" as const,
+      httpOnly: false, // Permitir acceso desde JavaScript
+      secure: process.env.NODE_ENV === "production", // Solo HTTPS en producción
+      maxAge: 60 * 60, // 1 hora
+      path: "/", // Disponible en todo el sitio
+      sameSite: "lax" as const, // Más permisivo que "strict"
     })
 
     return response
