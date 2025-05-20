@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false)
 
   // Constantes para configuración
-  const SESSION_EXPIRY = 168 * 60 * 60 * 1000 // 24 horas de duración de sesión
+  const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 horas de duración de sesión
 
   // Función para verificar si hay un usuario en localStorage
   const getUserFromLocalStorage = (): User | null => {
@@ -65,16 +65,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Si han pasado más de 24 horas desde la última actualización, considerar la sesión expirada
         if (now - lastUpdate > SESSION_EXPIRY) {
-          console.log("Sesión expirada por tiempo (24 horas)")
           localStorage.removeItem("wikimillionaire_user")
           localStorage.removeItem("wikimillionaire_last_update")
           return null
         }
       }
 
-      return JSON.parse(userJson)
+      // Validar que el objeto de usuario tenga la estructura correcta
+      const parsedUser = JSON.parse(userJson)
+      if (!parsedUser || typeof parsedUser !== "object") {
+        console.error("Formato de usuario inválido en localStorage")
+        return null
+      }
+
+      // Asegurarse de que tenga las propiedades mínimas necesarias
+      if (!parsedUser.id || !parsedUser.username) {
+        console.error("Datos de usuario incompletos en localStorage")
+        return null
+      }
+
+      // Asegurarse de que todas las propiedades tengan valores válidos
+      const validatedUser: User = {
+        id: parsedUser.id || `user_${Date.now()}`,
+        username: parsedUser.username || "Usuario",
+        wikimedia_id: parsedUser.wikimedia_id || "",
+        email: parsedUser.email || null,
+        avatar_url: parsedUser.avatar_url || null,
+        created_at: parsedUser.created_at || new Date().toISOString(),
+        last_login: parsedUser.last_login || new Date().toISOString(),
+      }
+
+      return validatedUser
     } catch (error) {
       console.error("Error al leer usuario de localStorage:", error)
+      // En caso de error, limpiar localStorage para evitar problemas futuros
+      localStorage.removeItem("wikimillionaire_user")
+      localStorage.removeItem("wikimillionaire_last_update")
       return null
     }
   }
@@ -83,37 +109,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const saveUserToLocalStorage = (user: User | null) => {
     if (typeof window === "undefined") return
 
-    if (user) {
-      localStorage.setItem("wikimillionaire_user", JSON.stringify(user))
-      localStorage.setItem("wikimillionaire_last_update", Date.now().toString())
-    } else {
-      localStorage.removeItem("wikimillionaire_user")
-      localStorage.removeItem("wikimillionaire_last_update")
+    try {
+      if (user) {
+        localStorage.setItem("wikimillionaire_user", JSON.stringify(user))
+        localStorage.setItem("wikimillionaire_last_update", Date.now().toString())
+      } else {
+        localStorage.removeItem("wikimillionaire_user")
+        localStorage.removeItem("wikimillionaire_last_update")
+      }
+    } catch (error) {
+      console.error("Error al guardar usuario en localStorage:", error)
     }
   }
 
   // Función para login manual (para depuración)
   const manualLogin = (userData: any) => {
-    const user = {
-      id: userData.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      username: userData.username || "usuario_test",
-      wikimedia_id: userData.wikimedia_id || "test_id",
-      email: userData.email || null,
-      avatar_url: userData.avatar_url || null,
-      created_at: userData.created_at || new Date().toISOString(),
-      last_login: new Date().toISOString(),
-    }
+    try {
+      const user = {
+        id: userData.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        username: userData.username || "usuario_test",
+        wikimedia_id: userData.wikimedia_id || "test_id",
+        email: userData.email || null,
+        avatar_url: userData.avatar_url || null,
+        created_at: userData.created_at || new Date().toISOString(),
+        last_login: new Date().toISOString(),
+      }
 
-    setUser(user)
-    saveUserToLocalStorage(user)
-    setDebugInfo((prev: any) => ({ ...prev, manualUser: user }))
+      setUser(user)
+      saveUserToLocalStorage(user)
+      setDebugInfo((prev: any) => ({ ...prev, manualUser: user }))
+    } catch (error) {
+      console.error("Error en login manual:", error)
+      setError("Error en login manual")
+    }
   }
 
   // Modificar la función checkSession para usar SOLO localStorage
   const checkSession = async () => {
     try {
       setLoading(true)
-      console.log("Verificando sesión desde localStorage...")
 
       // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
@@ -128,6 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
+      // En caso de error, asegurarse de que el usuario sea null
+      setUser(null)
     } finally {
       setLoading(false)
       setIsInitialized(true)
@@ -165,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
       // Construir la URL de autorización
-      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // Reemplazar con tu client ID real
+      const clientId = "your-client-id" // Reemplazar con tu client ID real
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
       const authUrl =
@@ -208,7 +244,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
-      console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
@@ -228,7 +263,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
-      console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
       saveUserToLocalStorage(userData) // Guardar en localStorage
@@ -283,7 +317,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     manualLogin,
   }
 
-  console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -45,7 +45,6 @@ function CallbackContent() {
           return
         }
 
-        setStatus("Verificando estado de autenticación...")
 
         // Obtener el estado y codeVerifier de localStorage
         const savedState = localStorage.getItem("wikimillionaire_oauth_state")
