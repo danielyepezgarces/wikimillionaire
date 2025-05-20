@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Trophy, Brain, Users } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
@@ -13,17 +12,20 @@ export default function HomePage() {
   const { locale, translations: t, changeLocale } = useLocale()
   const { user } = useAuth()
   const [showFeatures, setShowFeatures] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     const timer = setTimeout(() => {
       setShowFeatures(true)
     }, 500)
     return () => clearTimeout(timer)
   }, [])
 
-  // Función para manejar clics en los botones (solo para debug)
-  const handleButtonClick = (destination: string) => {
-    console.log(`Navegando a: ${destination}`)
+  const handleNavigation = (destination: string) => {
+    if (isClient) {
+      window.location.href = destination
+    }
   }
 
   return (
@@ -49,17 +51,22 @@ export default function HomePage() {
         </p>
 
         <div className="mb-12 flex flex-col gap-4 sm:flex-row">
-          <Button asChild size="lg" className="bg-yellow-500 text-black hover:bg-yellow-600">
-            <Link href="/play" onClick={() => handleButtonClick("/play")}>
-              {t.general.play}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          <Button
+            size="lg"
+            className="bg-yellow-500 text-black hover:bg-yellow-600"
+            onClick={() => handleNavigation("/play")}
+          >
+            {t.general.play}
+            <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
-          <Button asChild variant="outline" size="lg" className="border-purple-700 text-white hover:bg-purple-800/50">
-            <Link href="/leaderboard" onClick={() => handleButtonClick("/leaderboard")}>
-              <Trophy className="mr-2 h-5 w-5" />
-              {t.leaderboard.title}
-            </Link>
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-purple-700 text-white hover:bg-purple-800/50"
+            onClick={() => handleNavigation("/leaderboard")}
+          >
+            <Trophy className="mr-2 h-5 w-5" />
+            {t.leaderboard.title}
           </Button>
         </div>
 
@@ -119,15 +126,24 @@ export default function HomePage() {
               <p className="text-sm text-gray-400">© 2025 WikiMillionaire. {t.general.credits}</p>
             </div>
             <div className="flex gap-6">
-              <Link href="/about" className="text-sm text-gray-400 hover:text-white">
+              <button
+                onClick={() => handleNavigation("/about")}
+                className="text-sm text-gray-400 hover:text-white"
+              >
                 {t.general.about}
-              </Link>
-              <Link href="/privacy" className="text-sm text-gray-400 hover:text-white">
+              </button>
+              <button
+                onClick={() => handleNavigation("/privacy")}
+                className="text-sm text-gray-400 hover:text-white"
+              >
                 {t.general.privacy}
-              </Link>
-              <Link href="/terms" className="text-sm text-gray-400 hover:text-white">
+              </button>
+              <button
+                onClick={() => handleNavigation("/terms")}
+                className="text-sm text-gray-400 hover:text-white"
+              >
                 {t.general.terms}
-              </Link>
+              </button>
             </div>
           </div>
         </div>
