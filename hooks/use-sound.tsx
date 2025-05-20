@@ -10,8 +10,8 @@ export function useSound() {
   useEffect(() => {
     // Cargar sonidos solo en el cliente
     if (typeof window !== "undefined") {
-      const correct = new Audio("/sounds/correct.mp3")
-      const incorrect = new Audio("/sounds/incorrect.mp3")
+      const correct = new Audio("https://assets.wikipeoplestats.org/sounds/correct.mp3")
+      const incorrect = new Audio("https://assets.wikipeoplestats.org/sounds/incorrect.mp3")
 
       setCorrectSound(correct)
       setIncorrectSound(incorrect)
