@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Si han pasado más de 24 horas desde la última actualización, considerar la sesión expirada
         if (now - lastUpdate > SESSION_EXPIRY) {
-          console.log("Sesión expirada por tiempo (24 horas)")
           localStorage.removeItem("wikimillionaire_user")
           localStorage.removeItem("wikimillionaire_last_update")
           return null
@@ -143,17 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkSession = async () => {
     try {
       setLoading(true)
-      console.log("Verificando sesión desde localStorage...")
 
       // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
 
       if (localUser) {
-        console.log("Usuario obtenido de localStorage:", localUser)
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
       } else {
-        console.log("No hay usuario en localStorage")
         setUser(null)
         setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
       }
@@ -170,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
-    console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
@@ -243,7 +238,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
-      console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
@@ -263,7 +257,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
-      console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
       saveUserToLocalStorage(userData) // Guardar en localStorage
