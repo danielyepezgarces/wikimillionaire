@@ -4,6 +4,15 @@ import crypto from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar si ya estamos en un proceso de redirección para evitar bucles
+    const { searchParams } = new URL(request.url)
+    const isRedirect = searchParams.get("isRedirect") === "true"
+
+    if (isRedirect) {
+      console.error("Detectado posible bucle de redirección")
+      return NextResponse.json({ error: "Posible bucle de redirección detectado" }, { status: 400 })
+    }
+
     // Generar state y code verifier aleatorios
     const state = crypto.randomBytes(16).toString("hex")
     const codeVerifier = crypto.randomBytes(64).toString("hex")
@@ -25,7 +34,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Leer parámetro returnTo para redirigir después del login
-    const { searchParams } = new URL(request.url)
     const returnTo = searchParams.get("returnTo") || "/"
 
     // Guardar state, codeVerifier y returnTo en cookie segura
@@ -51,7 +59,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set("wikimedia_auth_state", cookieValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 30, // 30 minutos (aumentado de 10 a 30)
+      maxAge: 60 * 30, // 30 minutos
       path: "/",
       sameSite: "lax" as const,
     })

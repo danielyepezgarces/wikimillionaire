@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -11,6 +11,7 @@ export default function AuthCallbackPage() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<string>("Iniciando proceso de autenticación...")
   const { login } = useAuth()
+  const isRedirecting = useRef(false)
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -56,9 +57,17 @@ export default function AuthCallbackPage() {
           console.error("No se encontró la cookie de estado, redirigiendo al login")
           setStatus("Redirigiendo al inicio de sesión...")
 
-          // Redirigir al usuario al login
+          // Evitar bucles de redirección
+          if (isRedirecting.current) {
+            setError("Error: Bucle de redirección detectado. Por favor, intenta iniciar sesión manualmente.")
+            return
+          }
+
+          isRedirecting.current = true
+
+          // Redirigir al usuario al login a través del endpoint del servidor
           setTimeout(() => {
-            window.location.href = "/api/auth/login?returnTo=" + encodeURIComponent(window.location.pathname)
+            window.location.href = "/api/auth/wikimedia"
           }, 2000)
 
           return
@@ -172,10 +181,10 @@ export default function AuthCallbackPage() {
           <p className="text-gray-300">{error}</p>
           <p className="mt-4 text-sm text-gray-400">Por favor, intenta iniciar sesión nuevamente.</p>
           <button
-            onClick={() => (window.location.href = "/api/auth/login")}
+            onClick={() => (window.location.href = "/api/auth/wikimedia")}
             className="mt-4 w-full rounded-md bg-yellow-500 py-2 text-black hover:bg-yellow-600"
           >
-            Intentar de nuevo
+            Iniciar sesión con Wikimedia
           </button>
           <button
             onClick={() => router.push("/")}
