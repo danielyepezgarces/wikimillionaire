@@ -131,9 +131,9 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
               <User className="h-6 w-6 text-yellow-400" />
-              Perfil de Usuario
+              {t.profile.title}
             </CardTitle>
-            <CardDescription className="text-gray-300">Información de tu cuenta de WikiMillionaire</CardDescription>
+            <CardDescription className="text-gray-300">{t.profile.welcomesubtitle}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -155,7 +155,7 @@ export default function ProfilePage() {
               <div className="text-center sm:text-left">
                 <h2 className="text-2xl font-bold text-yellow-400">{user.username || "Usuario"}</h2>
                 {user.email && <p className="text-gray-300">{user.email}</p>}
-                <p className="text-sm text-gray-400">Miembro desde {new Date(user.created_at).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-400">{t.profile.joinedAt} {new Date(user.created_at).toLocaleDateString()}</p>
                 {safeStats.rank > 0 && (
                   <p className="mt-1 inline-flex items-center rounded-full bg-purple-800/50 px-2 py-1 text-sm text-yellow-400">
                     <Trophy className="mr-1 h-4 w-4" /> Ranking: #{safeStats.rank}
@@ -165,18 +165,18 @@ export default function ProfilePage() {
             </div>
 
             <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
-              <h3 className="mb-3 text-lg font-semibold text-yellow-400">Estadísticas</h3>
+              <h3 className="mb-3 text-lg font-semibold text-yellow-400">{t.profile.stats.title}</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Partidas jugadas</p>
+                  <p className="text-sm text-gray-300">{t.profile.stats.gamesPlayed}</p>
                   <p className="text-2xl font-bold text-white">{safeStats.gamesPlayed}</p>
                 </div>
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Puntuación máxima</p>
+                  <p className="text-sm text-gray-300">{t.profile.stats.highScore}</p>
                   <p className="text-2xl font-bold text-white">{safeStats.highestScore.toLocaleString()}</p>
                 </div>
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Posición en ranking</p>
+                  <p className="text-sm text-gray-300">{t.profile.stats.ranking}</p>
                   <p className="text-2xl font-bold text-white">#{safeStats.rank || "-"}</p>
                 </div>
               </div>
@@ -184,13 +184,13 @@ export default function ProfilePage() {
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-300">Puntuación total</p>
+                    <p className="text-sm text-gray-300">{t.profile.stats.totalScore}</p>
                     <p className="font-bold text-white">{safeStats.totalScore.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-300">Puntuación media</p>
+                    <p className="text-sm text-gray-300">{t.profile.stats.averageScore}</p>
                     <p className="font-bold text-white">{safeStats.averageScore.toLocaleString()}</p>
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export default function ProfilePage() {
 
               <div className="mt-4 rounded-lg border border-purple-700 bg-purple-800/50 p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-300">Última partida</p>
+                  <p className="text-sm text-gray-300">{t.profile.stats.lastGame}</p>
                   <p className="font-bold text-white">
                     {safeStats.lastPlayed ? new Date(safeStats.lastPlayed).toLocaleDateString() : "-"}
                   </p>
@@ -248,7 +248,8 @@ export default function ProfilePage() {
           </CardContent>
           <CardFooter className="flex justify-center gap-4">
             <Button onClick={() => handleNavigation("/play")} className="bg-yellow-500 text-black hover:bg-yellow-600">
-              Jugar Ahora
+              {t.general.play}
+              <ArrowLeft className="ml-2 h-4 w-4" />
             </Button>
             <Button
               onClick={() => handleNavigation("/leaderboard")}
@@ -256,7 +257,7 @@ export default function ProfilePage() {
               className="border-purple-700 text-white hover:bg-purple-800/50"
             >
               <Award className="mr-2 h-4 w-4" />
-              Ver Clasificaciones
+              {t.leaderboard.title}
             </Button>
           </CardFooter>
         </Card>
