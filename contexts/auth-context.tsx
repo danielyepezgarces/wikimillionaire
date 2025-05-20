@@ -157,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
       // Construir la URL de autorización
-      const clientId = process.env.WIKIMEDIA_CLIENT_ID
+      const clientId = "cd1155b5217d823cec353e1e7b5576a1"
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
       const authUrl =
