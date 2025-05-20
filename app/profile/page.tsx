@@ -1,46 +1,75 @@
 "use client"
-import { useRouter } from "next/navigation"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, User, Award } from "lucide-react"
+import { ArrowLeft, User, Award, Trophy, Star, Gamepad, Diamond } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
-import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
+import type { UserStats, Achievement } from "@/lib/scores"
+import { Progress } from "@/components/ui/progress"
 
 export default function ProfilePage() {
-  const router = useRouter()
   const { locale, translations: t, changeLocale } = useLocale()
-  const { user, loading, refreshUser } = useAuth()
+  const { user, loading } = useAuth()
+  const [stats, setStats] = useState<UserStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
-  // Verificar si estamos en el cliente y si hay un usuario en localStorage
   useEffect(() => {
     setIsClient(true)
+    const fetchStats = async () => {
+      if (!user) return
 
-    // Intentar refrescar el usuario al cargar la página
-    refreshUser()
-
-    // Verificar si hay un usuario en localStorage
-    const checkLocalStorage = () => {
       try {
-        const storedUser = localStorage.getItem("wikimillionaire_user")
-        if (storedUser && !user) {
-          refreshUser()
+        setLoadingStats(true)
+        const response = await fetch(`/api/stats?userId=${user.id}`)
+
+        if (!response.ok) {
+          throw new Error("Error al obtener estadísticas")
         }
+
+        const data = await response.json()
+        setStats(data)
       } catch (error) {
-        console.error("Error al verificar localStorage:", error)
+        console.error("Error al cargar estadísticas:", error)
+      } finally {
+        setLoadingStats(false)
       }
     }
 
-    checkLocalStorage()
-  }, [refreshUser, user])
+    fetchStats()
+  }, [user])
 
-  // Mostrar un estado de carga hasta que sepamos si estamos en el cliente
-  if (!isClient || loading) {
+  const getAchievementIcon = (iconName: string) => {
+    switch (iconName) {
+      case "play":
+        return <Gamepad className="h-8 w-8 text-yellow-400" />
+      case "trophy":
+        return <Trophy className="h-8 w-8 text-yellow-400" />
+      case "award":
+        return <Award className="h-8 w-8 text-yellow-400" />
+      case "diamond":
+        return <Diamond className="h-8 w-8 text-yellow-400" />
+      case "gamepad":
+        return <Gamepad className="h-8 w-8 text-yellow-400" />
+      case "medal":
+        return <Star className="h-8 w-8 text-yellow-400" />
+      default:
+        return <Award className="h-8 w-8 text-yellow-400" />
+    }
+  }
+
+  const handleNavigation = (path: string) => {
+    if (isClient) {
+      window.location.href = path
+    }
+  }
+
+  if (loading || loadingStats) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
@@ -53,32 +82,21 @@ export default function ProfilePage() {
     )
   }
 
-  // Verificar si hay un usuario en localStorage aunque no esté en el contexto
-  let localUser = null
-  try {
-    const storedUser = localStorage.getItem("wikimillionaire_user")
-    if (storedUser && !user) {
-      localUser = JSON.parse(storedUser)
-    }
-  } catch (error) {
-    console.error("Error al leer localStorage:", error)
-  }
-
-  // Usar el usuario del contexto o el de localStorage
-  const currentUser = user || localUser
-
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
           <h1 className="mb-4 text-xl font-bold text-red-400">Acceso denegado</h1>
           <p className="text-gray-300">Debes iniciar sesión para ver esta página.</p>
           <div className="mt-6 flex justify-center gap-4">
-            <Button onClick={() => router.push("/")} className="bg-yellow-500 text-black hover:bg-yellow-600">
+            <Button
+              onClick={() => handleNavigation("/")}
+              className="bg-yellow-500 text-black hover:bg-yellow-600"
+            >
               Volver al inicio
             </Button>
             <Button
-              onClick={() => (window.location.href = "/api/auth/login")}
+              onClick={() => handleNavigation("/api/auth/login")}
               variant="outline"
               className="border-purple-700 text-white hover:bg-purple-800/50"
             >
@@ -94,9 +112,12 @@ export default function ProfilePage() {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="text-gray-300 hover:text-white">
+          <button 
+            onClick={() => handleNavigation("/")}
+            className="text-gray-300 hover:text-white"
+          >
             <ArrowLeft className="h-6 w-6" />
-          </Link>
+          </button>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white">
               <span className="text-yellow-400">Wiki</span>Millionaire
@@ -112,85 +133,135 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
               <User className="h-6 w-6 text-yellow-400" />
-              Perfil de Usuario
+              {t.profile.title}
             </CardTitle>
-            <CardDescription className="text-gray-300">Información de tu cuenta de WikiMillionaire</CardDescription>
+            <CardDescription className="text-gray-300">{t.profile.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-yellow-500">
-                {currentUser.avatar_url ? (
+                {user.avatar_url ? (
                   <Image
-                    src={currentUser.avatar_url || "/placeholder.svg"}
-                    alt={currentUser.username}
+                    src={user.avatar_url || "/placeholder.svg"}
+                    alt={user.username}
                     width={96}
                     height={96}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-purple-800 text-3xl font-bold text-white">
-                    {currentUser.username.charAt(0).toUpperCase()}
+                    {user.username.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               <div className="text-center sm:text-left">
-                <h2 className="text-2xl font-bold text-yellow-400">{currentUser.username}</h2>
-                {currentUser.email && <p className="text-gray-300">{currentUser.email}</p>}
+                <h2 className="text-2xl font-bold text-yellow-400">{user.username}</h2>
+                {user.email && <p className="text-gray-300">{user.email}</p>}
                 <p className="text-sm text-gray-400">
-                  Miembro desde {new Date(currentUser.created_at).toLocaleDateString()}
+                  {t.profile.memberSince} {new Date(user.created_at).toLocaleDateString()}
                 </p>
+                {stats && stats.rank && (
+                  <p className="mt-1 inline-flex items-center rounded-full bg-purple-800/50 px-2 py-1 text-sm text-yellow-400">
+                    <Trophy className="mr-1 h-4 w-4" /> {t.profile.rank}: #{stats.rank}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
-              <h3 className="mb-3 text-lg font-semibold text-yellow-400">Estadísticas</h3>
+              <h3 className="mb-3 text-lg font-semibold text-yellow-400">{t.profile.stats}</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Partidas jugadas</p>
-                  <p className="text-2xl font-bold text-white">0</p>
+                  <p className="text-sm text-gray-300">{t.profile.gamesPlayed}</p>
+                  <p className="text-2xl font-bold text-white">{stats?.gamesPlayed || 0}</p>
                 </div>
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Puntuación máxima</p>
-                  <p className="text-2xl font-bold text-white">0</p>
+                  <p className="text-sm text-gray-300">{t.profile.highestScore}</p>
+                  <p className="text-2xl font-bold text-white">{stats?.highestScore?.toLocaleString() || 0}</p>
                 </div>
                 <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center">
-                  <p className="text-sm text-gray-300">Posición en ranking</p>
-                  <p className="text-2xl font-bold text-white">-</p>
+                  <p className="text-sm text-gray-300">{t.profile.rank}</p>
+                  <p className="text-2xl font-bold text-white">#{stats?.rank || "-"}</p>
                 </div>
               </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-300">{t.profile.totalScore}</p>
+                    <p className="font-bold text-white">{stats?.totalScore?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-purple-700 bg-purple-800/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-300">{t.profile.averageScore}</p>
+                    <p className="font-bold text-white">{stats?.averageScore?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-purple-700 bg-purple-800/50 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-300">{t.profile.lastGame}</p>
+                  <p className="font-bold text-white">
+                    {stats?.lastPlayed ? new Date(stats.lastPlayed).toLocaleDateString() : "-"}
+                  </p>
+                </div>
+              </div>
+
+              {stats?.highestScore && stats.highestScore > 0 && (
+                <div className="mt-4">
+                  <p className="mb-1 text-sm text-gray-300">{t.profile.progressToMillion}</p>
+                  <div className="flex items-center gap-2">
+                    <Progress value={(stats.highestScore / 1000000) * 100} className="h-2" />
+                    <span className="text-xs text-gray-300">{Math.round((stats.highestScore / 1000000) * 100)}%</span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
-              <h3 className="mb-3 text-lg font-semibold text-yellow-400">Logros</h3>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center opacity-50">
-                  <Award className="h-8 w-8 text-yellow-400" />
-                  <p className="text-sm text-gray-300">Primer juego</p>
-                </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center opacity-50">
-                  <Award className="h-8 w-8 text-yellow-400" />
-                  <p className="text-sm text-gray-300">Llegar a 10,000</p>
-                </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center opacity-50">
-                  <Award className="h-8 w-8 text-yellow-400" />
-                  <p className="text-sm text-gray-300">Millonario</p>
-                </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center opacity-50">
-                  <Award className="h-8 w-8 text-yellow-400" />
-                  <p className="text-sm text-gray-300">Top 10</p>
+            {stats?.achievements && stats.achievements.length > 0 && (
+              <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
+                <h3 className="mb-3 text-lg font-semibold text-yellow-400">{t.profile.achievements}</h3>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {stats.achievements.map((achievement: Achievement) => (
+                    <div
+                      key={achievement.id}
+                      className={`flex flex-col items-center gap-2 rounded-lg border border-purple-700 bg-purple-800/50 p-3 text-center ${
+                        achievement.unlocked ? "" : "opacity-50"
+                      }`}
+                    >
+                      {getAchievementIcon(achievement.icon)}
+                      <p className="text-sm text-gray-300">{achievement.name}</p>
+                      {achievement.unlocked ? (
+                        <span className="mt-1 rounded-full bg-green-900/50 px-2 py-0.5 text-xs text-green-400">
+                          {t.profile.unlocked}
+                        </span>
+                      ) : (
+                        <span className="mt-1 rounded-full bg-gray-900/50 px-2 py-0.5 text-xs text-gray-400">
+                          {t.profile.locked}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
           <CardFooter className="flex justify-center gap-4">
-            <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600">
-              <Link href="/play">{t.general.play}</Link>
+            <Button
+              onClick={() => handleNavigation("/play")}
+              className="bg-yellow-500 text-black hover:bg-yellow-600"
+            >
+              {t.general.play}
             </Button>
-            <Button asChild variant="outline" className="border-purple-700 text-white hover:bg-purple-800/50">
-              <Link href="/leaderboard">
-                <Award className="mr-2 h-4 w-4" />
-                {t.leaderboard.title}
-              </Link>
+            <Button
+              onClick={() => handleNavigation("/leaderboard")}
+              variant="outline"
+              className="border-purple-700 text-white hover:bg-purple-800/50"
+            >
+              <Award className="mr-2 h-4 w-4" />
+              {t.leaderboard.title}
             </Button>
           </CardFooter>
         </Card>
