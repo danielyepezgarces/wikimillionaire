@@ -4,7 +4,7 @@ import { getGravatarUrl } from "./gravatar"
 
 // Tipo para la sesión del usuario
 export type UserSession = {
-  id: string
+  id: string // UUID desde Supabase
   username: string
   wikimedia_id: string
   email?: string | null
@@ -15,30 +15,26 @@ export type UserSession = {
 
 // Función para crear una sesión
 export async function createSession(userData: {
+  id: string // UUID desde Supabase
   username: string
   wikimedia_id: string
   email?: string | null
-}) {
-  const { username, wikimedia_id, email } = userData
+}): Promise<UserSession> {
+  const { id, username, wikimedia_id, email } = userData
+  const now = new Date().toISOString()
 
-  // Crear un ID único para el usuario
-  const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-
-  // Crear objeto de sesión
   const session: UserSession = {
     id,
     username,
     wikimedia_id,
     email: email || null,
     avatar_url: email ? getGravatarUrl(email) : null,
-    created_at: new Date().toISOString(),
-    last_login: new Date().toISOString(),
+    created_at: now,
+    last_login: now,
   }
 
-  // Encriptar la sesión
   const encryptedSession = await encrypt(JSON.stringify(session))
 
-  // Establecer la cookie
   const cookieStore = cookies()
   cookieStore.set("session", encryptedSession, {
     httpOnly: true,
@@ -56,9 +52,7 @@ export async function getSession(): Promise<UserSession | null> {
   const cookieStore = cookies()
   const sessionCookie = cookieStore.get("session")
 
-  if (!sessionCookie) {
-    return null
-  }
+  if (!sessionCookie) return null
 
   try {
     const decryptedSession = await decrypt(sessionCookie.value)
@@ -70,29 +64,23 @@ export async function getSession(): Promise<UserSession | null> {
 }
 
 // Función para actualizar la sesión
-export async function updateSession(updates: Partial<UserSession>) {
+export async function updateSession(updates: Partial<UserSession>): Promise<UserSession | null> {
   const session = await getSession()
+  if (!session) return null
 
-  if (!session) {
-    return null
-  }
-
-  // Actualizar los campos
   const updatedSession: UserSession = {
     ...session,
     ...updates,
     last_login: new Date().toISOString(),
   }
 
-  // Encriptar la sesión actualizada
   const encryptedSession = await encrypt(JSON.stringify(updatedSession))
 
-  // Actualizar la cookie
   const cookieStore = cookies()
   cookieStore.set("session", encryptedSession, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 7, // 7 días
+    maxAge: 60 * 60 * 24 * 7,
     path: "/",
     sameSite: "lax",
   })
@@ -101,7 +89,7 @@ export async function updateSession(updates: Partial<UserSession>) {
 }
 
 // Función para eliminar la sesión
-export async function deleteSession() {
+export function deleteSession() {
   const cookieStore = cookies()
   cookieStore.delete("session")
 }
