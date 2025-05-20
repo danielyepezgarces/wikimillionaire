@@ -9,6 +9,8 @@ export function AuthDebug() {
   const [showDebug, setShowDebug] = useState(false)
   const [showCookies, setShowCookies] = useState(false)
   const [loadingTime, setLoadingTime] = useState(0)
+  const [wikimediaId, setWikimediaId] = useState("")
+  const [username, setUsername] = useState("")
 
   // Contador para el tiempo de carga
   useEffect(() => {
@@ -58,6 +60,40 @@ export function AuthDebug() {
       window.location.reload()
     } catch (error) {
       console.error("Error al forzar login:", error)
+    }
+  }
+
+  const handleCreateSession = async () => {
+    try {
+      if (!wikimediaId) {
+        alert("Por favor, ingresa un Wikimedia ID")
+        return
+      }
+
+      const response = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          wikimediaId,
+          username: username || "Usuario",
+          email: null,
+        }),
+      })
+
+      const data = await response.json()
+      console.log("Respuesta de create-session:", data)
+
+      if (response.ok) {
+        alert("Sesión creada correctamente. Recargando página...")
+        window.location.reload()
+      } else {
+        alert(`Error al crear sesión: ${data.error}`)
+      }
+    } catch (error) {
+      console.error("Error al crear sesión:", error)
+      alert(`Error al crear sesión: ${error}`)
     }
   }
 
@@ -136,6 +172,29 @@ export function AuthDebug() {
       <div className="mb-2">
         <strong>Debug Info:</strong>
         <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
+      </div>
+
+      <div className="mb-2">
+        <strong>Crear Sesión Manual:</strong>
+        <div className="mt-1 space-y-2">
+          <input
+            type="text"
+            placeholder="Wikimedia ID"
+            value={wikimediaId}
+            onChange={(e) => setWikimediaId(e.target.value)}
+            className="w-full p-1 bg-gray-800 border border-gray-700 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Nombre de usuario (opcional)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-1 bg-gray-800 border border-gray-700 rounded"
+          />
+          <Button variant="outline" size="sm" onClick={handleCreateSession}>
+            Crear Sesión
+          </Button>
+        </div>
       </div>
     </div>
   )
