@@ -1,57 +1,141 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { useState } from "react"
+import { Button } from "@/components/ui/button"
 
 export function AuthDebug() {
-  const { user, loading, error, refreshUser } = useAuth()
-  const [isVisible, setIsVisible] = useState(false)
+  const { user, loading, error, refreshUser, debugInfo } = useAuth()
+  const [showDebug, setShowDebug] = useState(false)
+  const [showCookies, setShowCookies] = useState(false)
+  const [loadingTime, setLoadingTime] = useState(0)
 
-  if (!isVisible) {
+  // Contador para el tiempo de carga
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    if (loading) {
+      interval = setInterval(() => {
+        setLoadingTime((prev) => prev + 1)
+      }, 1000)
+    } else {
+      setLoadingTime(0)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [loading])
+
+  const handleRefreshUser = async () => {
+    setLoadingTime(0)
+    await refreshUser()
+  }
+
+  const handleShowCookies = () => {
+    setShowCookies(!showCookies)
+  }
+
+  const handleFixAuthId = async () => {
+    try {
+      const response = await fetch("/api/auth/fix-auth-id", {
+        method: "POST",
+      })
+      const data = await response.json()
+      console.log("Respuesta de fix-auth-id:", data)
+      await refreshUser()
+    } catch (error) {
+      console.error("Error al arreglar auth_id:", error)
+    }
+  }
+
+  const handleForceLogin = async () => {
+    try {
+      const response = await fetch("/api/auth/force-login", {
+        method: "POST",
+      })
+      const data = await response.json()
+      console.log("Respuesta de force-login:", data)
+      window.location.reload()
+    } catch (error) {
+      console.error("Error al forzar login:", error)
+    }
+  }
+
+  if (!showDebug) {
     return (
-      <button
-        onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 bg-gray-800 text-white p-2 rounded-full opacity-50 hover:opacity-100"
-      >
-        Debug
-      </button>
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button variant="outline" size="sm" onClick={() => setShowDebug(true)}>
+          Debug {loading && `(Cargando: ${loadingTime}s)`}
+        </Button>
+      </div>
     )
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg max-w-md overflow-auto max-h-96">
-      <div className="flex justify-between mb-2">
+    <div className="fixed bottom-4 right-4 z-50 w-96 max-h-96 overflow-auto bg-gray-900 border border-gray-700 rounded-lg p-4 text-white text-xs">
+      <div className="flex justify-between items-center mb-2">
         <h3 className="font-bold">Auth Debug</h3>
-        <button onClick={() => setIsVisible(false)} className="text-gray-400 hover:text-white">
-          ✕
-        </button>
+        <Button variant="outline" size="sm" onClick={() => setShowDebug(false)}>
+          Cerrar
+        </Button>
       </div>
-      <div className="space-y-2">
-        <div>
-          <p className="text-gray-400">Loading: {loading ? "true" : "false"}</p>
-          <p className="text-gray-400">Error: {error || "none"}</p>
+
+      <div className="mb-2">
+        <strong>Estado:</strong> {loading ? `Cargando (${loadingTime}s)` : user ? "Autenticado" : "No autenticado"}
+      </div>
+
+      {error && (
+        <div className="mb-2 text-red-400">
+          <strong>Error:</strong> {error}
         </div>
-        <div>
-          <p className="font-bold">User:</p>
-          {user ? (
-            <pre className="text-xs overflow-auto bg-gray-900 p-2 rounded">{JSON.stringify(user, null, 2)}</pre>
-          ) : (
-            <p className="text-gray-400">No user</p>
-          )}
+      )}
+
+      {user && (
+        <div className="mb-2">
+          <strong>Usuario:</strong>
+          <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">{JSON.stringify(user, null, 2)}</pre>
         </div>
-        <button onClick={() => refreshUser()} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-          Refresh User
-        </button>
-        <button
+      )}
+
+      <div className="flex flex-wrap gap-2 mb-2">
+        <Button variant="outline" size="sm" onClick={handleRefreshUser}>
+          Refrescar Usuario
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleShowCookies}>
+          {showCookies ? "Ocultar Cookies" : "Mostrar Cookies"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleFixAuthId}>
+          Arreglar auth_id
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleForceLogin}>
+          Forzar Login
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => {
-            // Mostrar todas las cookies
-            console.log("Cookies:", document.cookie)
-            alert("Cookies: " + document.cookie)
+            localStorage.clear()
+            sessionStorage.clear()
+            document.cookie.split(";").forEach((c) => {
+              document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+            })
+            window.location.reload()
           }}
-          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-2"
         >
-          Show Cookies
-        </button>
+          Limpiar Todo
+        </Button>
+      </div>
+
+      {showCookies && (
+        <div className="mb-2">
+          <strong>Cookies:</strong>
+          <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">{document.cookie || "No hay cookies"}</pre>
+        </div>
+      )}
+
+      <div className="mb-2">
+        <strong>Debug Info:</strong>
+        <pre className="bg-gray-800 p-2 rounded mt-1 overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
       </div>
     </div>
   )
