@@ -44,28 +44,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
 
-  // Función para verificar la sesión
+  // Modificar la función checkSession para incluir un timeout y mejor manejo de errores
   const checkSession = async () => {
     try {
       setLoading(true)
       console.log("Verificando sesión...")
 
-      // Obtener el usuario actual
-      const response = await fetch("/api/auth/me")
+      // Implementar un timeout para evitar carga perpetua
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Timeout al verificar la sesión"))
+        }, 5000) // 5 segundos de timeout
+      })
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          // No autenticado
+      const fetchSessionPromise = async () => {
+        try {
+          // Obtener el usuario actual
+          const response = await fetch("/api/auth/me")
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              // No autenticado
+              setUser(null)
+              return
+            }
+
+            throw new Error("Error al obtener el usuario actual")
+          }
+
+          const userData = await response.json()
+          setUser(userData)
+          setDebugInfo((prev: any) => ({ ...prev, userData }))
+        } catch (error) {
+          console.error("Error en fetchSessionPromise:", error)
           setUser(null)
-          return
+          throw error
         }
-
-        throw new Error("Error al obtener el usuario actual")
       }
 
-      const userData = await response.json()
-      setUser(userData)
-      setDebugInfo((prev: any) => ({ ...prev, userData }))
+      // Usar Promise.race para implementar el timeout
+      await Promise.race([fetchSessionPromise(), timeoutPromise])
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
