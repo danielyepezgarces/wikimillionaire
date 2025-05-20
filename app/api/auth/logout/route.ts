@@ -1,26 +1,12 @@
 import { NextResponse } from "next/server"
-import { createSupabaseClient } from "@/lib/supabase"
+import { deleteSession } from "@/lib/session"
 
-export async function GET(request: Request) {
+export async function POST() {
   try {
-    console.log("Cerrando sesión...")
-    const supabase = createSupabaseClient()
-
-    // Cerrar sesión en Supabase
-    await supabase.auth.signOut()
-
-    // Crear una respuesta con una cookie que expire la cookie de estado
-    const response = NextResponse.redirect(new URL("/", request.url))
-
-    // Eliminar la cookie de estado
-    response.cookies.set("wikimedia_auth_state", "", {
-      expires: new Date(0),
-      path: "/",
-    })
-
-    return response
-  } catch (error) {
+    await deleteSession()
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
     console.error("Error al cerrar sesión:", error)
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 })
   }
 }
