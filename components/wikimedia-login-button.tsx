@@ -1,18 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { LogIn, LogOut, User, Settings } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import type { Translations } from "@/lib/i18n"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -22,12 +13,12 @@ interface WikimediaLoginButtonProps {
 
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const { user, loading, refreshUser, logout, getAuthUrl } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Asegurarse de que el componente está montado para evitar problemas de hidratación
   useEffect(() => {
@@ -36,14 +27,27 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     try {
       refreshUser()
     } catch (error) {
-      console.error("Error al refrescar usuario:", error)
+      // Error silencioso
     }
   }, [refreshUser])
+
+  // Cerrar el menú cuando se hace clic fuera de él
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      setError(null)
 
       // Obtener la URL de autenticación
       const authUrl = await getAuthUrl()
@@ -51,8 +55,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
       // Redirigir al usuario
       window.location.href = authUrl
     } catch (error) {
-      console.error("Error al iniciar sesión:", error)
-      setError("Error al iniciar sesión")
+      // Error silencioso
       setIsLoggingIn(false)
     }
   }
@@ -60,38 +63,39 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      setError(null)
       await logout()
     } catch (error) {
-      console.error("Error al cerrar sesión:", error)
-      setError("Error al cerrar sesión")
+      // Error silencioso
       setIsLoggingOut(false)
     }
   }
 
   const handleProfileClick = () => {
     try {
+      setIsMenuOpen(false)
       router.push("/profile")
     } catch (error) {
-      console.error("Error al navegar al perfil:", error)
-      setError("Error al navegar al perfil")
+      // Error silencioso
     }
   }
 
   const handleSettingsClick = () => {
     try {
+      setIsMenuOpen(false)
       router.push("/settings")
     } catch (error) {
-      console.error("Error al navegar a configuración:", error)
-      setError("Error al navegar a configuración")
+      // Error silencioso
     }
+  }
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen)
   }
 
   // No renderizar nada hasta que el componente esté montado
   if (!mounted) {
     return null
   }
-
 
   // Mostrar un indicador de carga mientras se verifica la sesión
   if (loading) {
@@ -104,86 +108,86 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   }
 
   if (user) {
-
     // Extraer el nombre de usuario de forma segura
     const username = user?.username || "Usuario"
     const firstLetter = username.charAt(0).toUpperCase()
 
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-purple-700 overflow-hidden p-0">
-            <div className="flex h-full w-full items-center justify-center bg-purple-800 text-white">{firstLetter}</div>
-            <span className="sr-only">{username}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-purple-900 border-purple-700 text-white">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{username}</p>
-              {user.email ? (
-                <p className="text-xs leading-none text-gray-400">{user.email}</p>
-              ) : (
-                <p className="text-xs leading-none text-gray-400">Usuario de Wikidata</p>
-              )}
+      <div className="relative" ref={menuRef}>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 rounded-full border-purple-700 overflow-hidden p-0"
+          onClick={toggleMenu}
+        >
+          <div className="flex h-full w-full items-center justify-center bg-purple-800 text-white">{firstLetter}</div>
+          <span className="sr-only">{username}</span>
+        </Button>
+
+        {isMenuOpen && (
+          <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-purple-900 border border-purple-700 text-white z-10">
+            <div className="py-2 px-4">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{username}</p>
+                {user.email ? (
+                  <p className="text-xs leading-none text-gray-400">{user.email}</p>
+                ) : (
+                  <p className="text-xs leading-none text-gray-400">Usuario de Wikidata</p>
+                )}
+              </div>
             </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-purple-700" />
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleProfileClick}
-          >
-            <User className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleSettingsClick}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configuración</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-purple-700" />
-          <DropdownMenuItem
-            className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            {isLoggingOut ? (
-              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            ) : (
-              <LogOut className="mr-2 h-4 w-4" />
-            )}
-            <span>{t.auth.logout}</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <div className="border-t border-purple-700"></div>
+            <div className="py-1">
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
+                onClick={handleProfileClick}
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </button>
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
+                onClick={handleSettingsClick}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configuración</span>
+              </button>
+            </div>
+            <div className="border-t border-purple-700"></div>
+            <div className="py-1">
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-purple-800"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                ) : (
+                  <LogOut className="mr-2 h-4 w-4" />
+                )}
+                <span>{t.auth.logout}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     )
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full border-purple-700 text-white hover:bg-purple-800/50 hover:text-white"
-            onClick={handleLogin}
-            disabled={isLoggingIn}
-          >
-            {isLoggingIn ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            ) : (
-              <LogIn className="h-4 w-4" />
-            )}
-            <span className="sr-only">{t.auth.login}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="bg-purple-900 border-purple-700 text-white">
-          <p>{t.auth.login}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button
+      variant="outline"
+      size="icon"
+      className="h-9 w-9 rounded-full border-purple-700 text-white hover:bg-purple-800/50 hover:text-white"
+      onClick={handleLogin}
+      disabled={isLoggingIn}
+    >
+      {isLoggingIn ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+      ) : (
+        <LogIn className="h-4 w-4" />
+      )}
+      <span className="sr-only">{t.auth.login}</span>
+    </Button>
   )
 }
