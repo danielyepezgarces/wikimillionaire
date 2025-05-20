@@ -41,11 +41,9 @@ export function useAuth() {
 // Proveedor del contexto
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
 
   // Constantes para configuración
   const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 horas de duración de sesión
@@ -66,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Si han pasado más de 24 horas desde la última actualización, considerar la sesión expirada
         if (now - lastUpdate > SESSION_EXPIRY) {
+          console.log("Sesión expirada por tiempo (24 horas)")
           localStorage.removeItem("wikimillionaire_user")
           localStorage.removeItem("wikimillionaire_last_update")
           return null
@@ -142,65 +141,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Modificar la función checkSession para usar SOLO localStorage
   const checkSession = async () => {
     try {
-      setLoading(true)
-
-      // Establecer un timeout para evitar loading infinito
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-      }
-
-      const timeout = setTimeout(() => {
-        setLoading(false)
-        setIsInitialized(true)
-      }, 5000) // 5 segundos máximo
-
-      setLoadingTimeout(timeout)
-
-
       // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
 
       if (localUser) {
+        console.log("Usuario obtenido de localStorage:", localUser)
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
       } else {
+        console.log("No hay usuario en localStorage")
         setUser(null)
         setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
-      }
-
-      // Limpiar el timeout ya que terminamos correctamente
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-        setLoadingTimeout(null)
       }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
       // En caso de error, asegurarse de que el usuario sea null
       setUser(null)
-    } finally {
-      setLoading(false)
-      setIsInitialized(true)
-
-      // Asegurarse de limpiar el timeout
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-        setLoadingTimeout(null)
-      }
     }
   }
 
-  // Limpiar el timeout al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-      }
-    }
-  }, [loadingTimeout])
-
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
+    console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
@@ -273,6 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
+      console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
@@ -292,6 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
+      console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
       saveUserToLocalStorage(userData) // Guardar en localStorage
@@ -336,7 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Valor del contexto
   const value = {
     user,
-    loading: loading && !isInitialized, // Solo mostrar loading si no está inicializado
+    loading,
     error,
     login,
     logout,
