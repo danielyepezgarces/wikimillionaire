@@ -25,7 +25,6 @@ export default function RootLayout({
           <AuthProvider>
             <SessionHandler />
             {children}
-            <AuthDebug />
           </AuthProvider>
         </ThemeProvider>
       </body>
