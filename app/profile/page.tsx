@@ -9,13 +9,39 @@ import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { locale, translations: t, changeLocale } = useLocale()
-  const { user, loading } = useAuth()
+  const { user, loading, refreshUser } = useAuth()
+  const [isClient, setIsClient] = useState(false)
 
-  if (loading) {
+  // Verificar si estamos en el cliente y si hay un usuario en localStorage
+  useEffect(() => {
+    setIsClient(true)
+
+    // Intentar refrescar el usuario al cargar la página
+    refreshUser()
+
+    // Verificar si hay un usuario en localStorage
+    const checkLocalStorage = () => {
+      try {
+        const storedUser = localStorage.getItem("wikimillionaire_user")
+        if (storedUser && !user) {
+          console.log("Usuario encontrado en localStorage pero no en contexto, refrescando...")
+          refreshUser()
+        }
+      } catch (error) {
+        console.error("Error al verificar localStorage:", error)
+      }
+    }
+
+    checkLocalStorage()
+  }, [refreshUser, user])
+
+  // Mostrar un estado de carga hasta que sepamos si estamos en el cliente
+  if (!isClient || loading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
@@ -28,7 +54,22 @@ export default function ProfilePage() {
     )
   }
 
-  if (!user) {
+  // Verificar si hay un usuario en localStorage aunque no esté en el contexto
+  let localUser = null
+  try {
+    const storedUser = localStorage.getItem("wikimillionaire_user")
+    if (storedUser && !user) {
+      localUser = JSON.parse(storedUser)
+      console.log("Usuario encontrado en localStorage:", localUser)
+    }
+  } catch (error) {
+    console.error("Error al leer localStorage:", error)
+  }
+
+  // Usar el usuario del contexto o el de localStorage
+  const currentUser = user || localUser
+
+  if (!currentUser) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
@@ -80,24 +121,26 @@ export default function ProfilePage() {
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-yellow-500">
-                {user.avatar_url ? (
+                {currentUser.avatar_url ? (
                   <Image
-                    src={user.avatar_url || "/placeholder.svg"}
-                    alt={user.username}
+                    src={currentUser.avatar_url || "/placeholder.svg"}
+                    alt={currentUser.username}
                     width={96}
                     height={96}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-purple-800 text-3xl font-bold text-white">
-                    {user.username.charAt(0).toUpperCase()}
+                    {currentUser.username.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               <div className="text-center sm:text-left">
-                <h2 className="text-2xl font-bold text-yellow-400">{user.username}</h2>
-                {user.email && <p className="text-gray-300">{user.email}</p>}
-                <p className="text-sm text-gray-400">Miembro desde {new Date(user.created_at).toLocaleDateString()}</p>
+                <h2 className="text-2xl font-bold text-yellow-400">{currentUser.username}</h2>
+                {currentUser.email && <p className="text-gray-300">{currentUser.email}</p>}
+                <p className="text-sm text-gray-400">
+                  Miembro desde {new Date(currentUser.created_at).toLocaleDateString()}
+                </p>
               </div>
             </div>
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { verifyToken } from "./lib/auth"
 
 // Rutas que no requieren autenticación
 const publicRoutes = ["/", "/auth/callback", "/api/auth/login", "/api/auth/token", "/api/auth/user", "/api/auth/logout"]
@@ -18,25 +17,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Verificar si hay un token de autenticación
-  const token = request.cookies.get("auth_token")?.value
+  // Verificar si hay un token de autenticación en cookies
+  const authToken = request.cookies.get("auth_token")?.value
+  const userCookie = request.cookies.get("wikimillionaire_user")?.value
+  const sessionCookie = request.cookies.get("session")?.value
 
-  if (!token) {
-    // Redirigir a la página de inicio si no hay token
-    return NextResponse.redirect(new URL("/", request.url))
+  // Verificar si hay datos de usuario en localStorage (a través de un header personalizado)
+  const localStorageUser = request.headers.get("X-LocalStorage-User")
+
+  // Si hay cualquier forma de autenticación, permitir el acceso
+  if (authToken || userCookie || sessionCookie || localStorageUser) {
+    return NextResponse.next()
   }
 
-  // Verificar si el token es válido
-  const payload = verifyToken(token)
-
-  if (!payload) {
-    // Eliminar la cookie y redirigir a la página de inicio si el token no es válido
-    const response = NextResponse.redirect(new URL("/", request.url))
-    response.cookies.delete("auth_token")
-    return response
-  }
-
-  return NextResponse.next()
+  // Si no hay ninguna forma de autenticación, redirigir a la página de inicio
+  console.log("Middleware: Usuario no autenticado, redirigiendo a /")
+  return NextResponse.redirect(new URL("/", request.url))
 }
 
 export const config = {
