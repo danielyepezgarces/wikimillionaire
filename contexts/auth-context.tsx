@@ -43,6 +43,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Función para verificar si hay un usuario en localStorage (fallback)
+  const getUserFromLocalStorage = (): User | null => {
+    if (typeof window === "undefined") return null
+
+    try {
+      const userJson = localStorage.getItem("wikimillionaire_user")
+      if (!userJson) return null
+
+      return JSON.parse(userJson)
+    } catch (error) {
+      console.error("Error al leer usuario de localStorage:", error)
+      return null
+    }
+  }
+
+  // Función para guardar usuario en localStorage (fallback)
+  const saveUserToLocalStorage = (user: User | null) => {
+    if (typeof window === "undefined") return
+
+    if (user) {
+      localStorage.setItem("wikimillionaire_user", JSON.stringify(user))
+    } else {
+      localStorage.removeItem("wikimillionaire_user")
+    }
+  }
 
   // Modificar la función checkSession para incluir un timeout y mejor manejo de errores
   const checkSession = async () => {
@@ -50,46 +77,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true)
       console.log("Verificando sesión...")
 
-      // Implementar un timeout para evitar carga perpetua
-      const timeoutPromise = new Promise<void>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("Timeout al verificar la sesión"))
-        }, 5000) // 5 segundos de timeout
-      })
+      // Primero intentar obtener el usuario de la cookie a través del API
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        })
 
-      const fetchSessionPromise = async () => {
-        try {
-          // Obtener el usuario actual
-          const response = await fetch("/api/auth/me")
-
-          if (!response.ok) {
-            if (response.status === 401) {
-              // No autenticado
-              setUser(null)
-              return
-            }
-
-            throw new Error("Error al obtener el usuario actual")
-          }
-
+        if (response.ok) {
           const userData = await response.json()
+          console.log("Usuario obtenido de la API:", userData)
           setUser(userData)
-          setDebugInfo((prev: any) => ({ ...prev, userData }))
-        } catch (error) {
-          console.error("Error en fetchSessionPromise:", error)
-          setUser(null)
-          throw error
+          saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
+          setDebugInfo((prev: any) => ({ ...prev, userData, source: "api" }))
+          return
+        } else if (response.status !== 401) {
+          console.error("Error al verificar sesión:", response.status)
         }
+      } catch (apiError) {
+        console.error("Error al llamar a la API:", apiError)
       }
 
-      // Usar Promise.race para implementar el timeout
-      await Promise.race([fetchSessionPromise(), timeoutPromise])
+      // Si no hay usuario en la API, intentar obtenerlo de localStorage
+      const localUser = getUserFromLocalStorage()
+      if (localUser) {
+        console.log("Usuario obtenido de localStorage:", localUser)
+        setUser(localUser)
+        setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
+        return
+      }
+
+      // Si no hay usuario ni en la API ni en localStorage, el usuario no está autenticado
+      console.log("Usuario no autenticado")
+      setUser(null)
+      setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
       setUser(null)
     } finally {
       setLoading(false)
+      setIsInitialized(true)
     }
   }
 
@@ -107,10 +139,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Función para obtener la URL de autenticación
   const getAuthUrl = async (): Promise<string> => {
     try {
-      // Esta función ahora simplemente devuelve la URL del endpoint del servidor
-      return "/api/auth/wikimedia"
+      // Generar un nuevo estado y codeVerifier
+      const state = crypto.randomUUID()
+      const codeVerifier = crypto.randomUUID() + crypto.randomUUID()
+
+      // Guardar en localStorage para recuperarlo después
+      localStorage.setItem("wikimillionaire_oauth_state", state)
+      localStorage.setItem("wikimillionaire_oauth_code_verifier", codeVerifier)
+      localStorage.setItem("wikimillionaire_oauth_timestamp", Date.now().toString())
+
+      // Calcular code challenge (SHA-256)
+      const encoder = new TextEncoder()
+      const data = encoder.encode(codeVerifier)
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      const hashBase64 = btoa(String.fromCharCode(...hashArray))
+      const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+
+      // Construir la URL de autorización
+      const clientId = process.env.WIKIMEDIA_CLIENT_ID
+      const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
+
+      const authUrl =
+        `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
+        `client_id=${clientId}` +
+        `&response_type=code` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${state}` +
+        `&code_challenge=${codeChallenge}` +
+        `&code_challenge_method=S256`
+
+      return authUrl
     } catch (error) {
-      console.error("Error al obtener la URL de autenticación:", error)
+      console.error("Error al generar URL de autenticación:", error)
       throw error
     }
   }
@@ -162,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
+      saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
 
       // Refrescar la página para asegurar que todo se actualice correctamente
       window.location.href = "/"
@@ -179,14 +241,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
 
-      const response = await fetch("/api/auth/logout", {
+      // Llamar al endpoint de logout
+      await fetch("/api/auth/logout", {
         method: "POST",
       })
 
-      if (!response.ok) {
-        throw new Error("Error al cerrar sesión")
-      }
+      // Limpiar localStorage
+      localStorage.removeItem("wikimillionaire_user")
+      localStorage.removeItem("wikimillionaire_oauth_state")
+      localStorage.removeItem("wikimillionaire_oauth_code_verifier")
+      localStorage.removeItem("wikimillionaire_oauth_timestamp")
 
+      // Limpiar todas las cookies relacionadas
+      document.cookie = "wikimillionaire_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+
+      // Actualizar el estado
       setUser(null)
 
       // Recargar la página para asegurar que todo se actualice correctamente
@@ -203,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Valor del contexto
   const value = {
     user,
-    loading,
+    loading: loading && !isInitialized, // Solo mostrar loading si no está inicializado
     error,
     login,
     logout,
@@ -212,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     debugInfo,
   }
 
-  console.log("AuthProvider: Estado actual:", { user, loading, error })
+  console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
