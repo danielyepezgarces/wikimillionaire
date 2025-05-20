@@ -126,7 +126,7 @@ export default function LeaderboardPage() {
                 {resetInfo.length > 0 && activeTab !== "all" && (
                   <div className="flex items-center gap-1 text-sm text-yellow-400">
                     <Clock className="h-4 w-4" />
-                    <span>Reinicio en: </span>
+                    <span>{t.leaderboard.resetsIn}: </span>
                     <CountdownTimer targetDate={getCurrentResetInfo().nextReset} className="font-bold" />
                     <TooltipProvider>
                       <Tooltip>
@@ -209,7 +209,7 @@ export default function LeaderboardPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
           <div className="flex items-center justify-between text-sm font-medium text-gray-400">
-            <div className="w-16 text-center">Posición</div>
+            <div className="w-16 text-center">{t.leaderboard.position}</div>
             <div className="flex-1">Jugador</div>
             <div className="w-24 text-right">
               <TooltipProvider>
