@@ -29,7 +29,7 @@ type AuthContextType = {
 // Crear el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Hook personalizado
+// Hook personalizado para usar el contexto
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -45,8 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
 
-  const SESSION_EXPIRY = 24 * 60 * 60 * 1000
+  // Constantes para configuración
+  const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 horas de duración de sesión
 
+  // Función para verificar si hay un usuario en localStorage
   const getUserFromLocalStorage = (): User | null => {
     if (typeof window === "undefined") return null
 
@@ -54,10 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userJson = localStorage.getItem("wikimillionaire_user")
       if (!userJson) return null
 
+      // Verificar si hay un timestamp de última actualización
       const lastUpdateStr = localStorage.getItem("wikimillionaire_last_update")
       if (lastUpdateStr) {
         const lastUpdate = Number.parseInt(lastUpdateStr, 10)
         const now = Date.now()
+
+        // Si han pasado más de 24 horas desde la última actualización, considerar la sesión expirada
         if (now - lastUpdate > SESSION_EXPIRY) {
           localStorage.removeItem("wikimillionaire_user")
           localStorage.removeItem("wikimillionaire_last_update")
@@ -65,15 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Validar que el objeto de usuario tenga la estructura correcta
       const parsedUser = JSON.parse(userJson)
       if (!parsedUser || typeof parsedUser !== "object") {
         console.error("Formato de usuario inválido en localStorage")
         return null
       }
 
+      // Crear un objeto de usuario con valores predeterminados para todas las propiedades
       const validatedUser: User = {
-        id: typeof parsedUser.id === "string" ? parsedUser.id : "", // ← no se genera un id genérico
-        username: typeof parsedUser.username === "string" ? parsedUser.username : "Usuario",
+        id: typeof parsedUser.id === "string" && parsedUser.id.length > 0 ? parsedUser.id : crypto.randomUUID(),
+        username: typeof parsedUser.username === "string" && parsedUser.username.length > 0 ? parsedUser.username : "Usuario",
         wikimedia_id: typeof parsedUser.wikimedia_id === "string" ? parsedUser.wikimedia_id : "",
         email: parsedUser.email || null,
         avatar_url: parsedUser.avatar_url || null,
@@ -81,20 +88,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         last_login: typeof parsedUser.last_login === "string" ? parsedUser.last_login : new Date().toISOString(),
       }
 
-      if (!validatedUser.id) {
-        console.error("ID inválido o faltante en localStorage")
-        return null
-      }
 
       return validatedUser
     } catch (error) {
       console.error("Error al leer usuario de localStorage:", error)
+      // En caso de error, limpiar localStorage para evitar problemas futuros
       localStorage.removeItem("wikimillionaire_user")
       localStorage.removeItem("wikimillionaire_last_update")
       return null
     }
   }
 
+  // Función para guardar usuario en localStorage
   const saveUserToLocalStorage = (user: User | null) => {
     if (typeof window === "undefined") return
 
@@ -111,12 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Función para login manual (para depuración)
   const manualLogin = (userData: any) => {
     try {
-      if (!userData.id) throw new Error("El ID del usuario (Supabase UUID) es obligatorio")
-
-      const user: User = {
-        id: userData.id,
+      const user = {
+        id: userData.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         username: userData.username || "usuario_test",
         wikimedia_id: userData.wikimedia_id || "test_id",
         email: userData.email || null,
@@ -134,42 +138,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Modificar la función checkSession para usar SOLO localStorage
   const checkSession = async () => {
     try {
+      // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
+
       if (localUser) {
-        console.log("Usuario obtenido de localStorage:", localUser)
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
       } else {
-        console.log("No hay usuario en localStorage")
         setUser(null)
         setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
       }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
+      // En caso de error, asegurarse de que el usuario sea null
       setUser(null)
     }
   }
 
+  // Inicializar y verificar la sesión al cargar
   useEffect(() => {
+    console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
+  // Función para refrescar los datos del usuario
   const refreshUser = async () => {
     await checkSession()
   }
 
+  // Función para obtener la URL de autenticación
   const getAuthUrl = async (): Promise<string> => {
     try {
+      // Generar un nuevo estado y codeVerifier
       const state = crypto.randomUUID()
       const codeVerifier = crypto.randomUUID() + crypto.randomUUID()
 
+      // Guardar en localStorage para recuperarlo después
       localStorage.setItem("wikimillionaire_oauth_state", state)
       localStorage.setItem("wikimillionaire_oauth_code_verifier", codeVerifier)
       localStorage.setItem("wikimillionaire_oauth_timestamp", Date.now().toString())
 
+      // Calcular code challenge (SHA-256)
       const encoder = new TextEncoder()
       const data = encoder.encode(codeVerifier)
       const hashBuffer = await crypto.subtle.digest("SHA-256", data)
@@ -177,25 +190,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const hashBase64 = btoa(String.fromCharCode(...hashArray))
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
-      const clientId = "cd1155b5217d823cec353e1e7b5576a1"
+      // Construir la URL de autorización
+      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // Reemplazar con tu client ID real
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
-      return `https://www.wikidata.org/w/rest.php/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`
+      const authUrl =
+        `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
+        `client_id=${clientId}` +
+        `&response_type=code` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${state}` +
+        `&code_challenge=${codeChallenge}` +
+        `&code_challenge_method=S256`
+
+      return authUrl
     } catch (error) {
       console.error("Error al generar URL de autenticación:", error)
       throw error
     }
   }
 
+  // Función para iniciar sesión
   const login = async (code: string, codeVerifier: string) => {
     try {
       setLoading(true)
       setError(null)
 
+      // 1. Intercambiar el código por un token
       const tokenResponse = await fetch("/api/auth/token", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, codeVerifier }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          codeVerifier,
+        }),
       })
 
       if (!tokenResponse.ok) {
@@ -207,10 +237,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
+      // 2. Obtener información del usuario
       const userInfoResponse = await fetch("/api/auth/user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: tokenData.access_token }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessToken: tokenData.access_token,
+        }),
       })
 
       if (!userInfoResponse.ok) {
@@ -218,15 +253,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(errorData.error || "Error al obtener información del usuario")
       }
 
-      const userData: User = await userInfoResponse.json()
-      console.log("Datos de usuario obtenidos:", userData)
-
-      if (!userData.id) throw new Error("Falta el ID de Supabase en los datos del usuario")
-
+      const userData = await userInfoResponse.json()
+      console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
-      setUser(userData)
-      saveUserToLocalStorage(userData)
+      setUser(userData as User)
+      saveUserToLocalStorage(userData) // Guardar en localStorage
 
+      // Refrescar la página para asegurar que todo se actualice correctamente
       window.location.href = "/"
     } catch (err) {
       console.error("Error al iniciar sesión:", err)
@@ -237,29 +270,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Función para cerrar sesión
   const logout = async () => {
     try {
       setLoading(true)
+
+      // Limpiar localStorage
       localStorage.removeItem("wikimillionaire_user")
       localStorage.removeItem("wikimillionaire_last_update")
       localStorage.removeItem("wikimillionaire_oauth_state")
       localStorage.removeItem("wikimillionaire_oauth_code_verifier")
       localStorage.removeItem("wikimillionaire_oauth_timestamp")
+
+      // Actualizar el estado
       setUser(null)
+
+      // Recargar la página para asegurar que todo se actualice correctamente
       window.location.href = "/"
     } catch (err) {
       console.error("Error al cerrar sesión:", err)
       setDebugInfo((prev: any) => ({ ...prev, logoutError: err }))
+      setError("Error al cerrar sesión")
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <AuthContext.Provider
-      value={{ user, loading, error, login, logout, getAuthUrl, refreshUser, debugInfo, manualLogin }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  // Valor del contexto
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    logout,
+    getAuthUrl,
+    refreshUser,
+    debugInfo,
+    manualLogin,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
