@@ -13,14 +13,29 @@ import { Progress } from "@/components/ui/progress"
 
 export default function ProfilePage() {
   const { locale, translations: t, changeLocale } = useLocale()
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading, error: authError } = useAuth()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
 
+  // Establecer un timeout para evitar loading infinito
   useEffect(() => {
     setIsClient(true)
+
+    const timeout = setTimeout(() => {
+      console.log("Timeout de carga de perfil alcanzado")
+      setLoadingStats(false)
+    }, 5000) // 5 segundos máximo
+
+    setLoadingTimeout(timeout)
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
+    }
   }, [])
 
   // Cargar estadísticas del usuario
@@ -45,13 +60,28 @@ export default function ProfilePage() {
         setError(error instanceof Error ? error.message : "Error desconocido al cargar estadísticas")
       } finally {
         setLoadingStats(false)
+
+        // Limpiar el timeout ya que terminamos correctamente
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout)
+          setLoadingTimeout(null)
+        }
       }
     }
 
     if (user && isClient) {
       fetchStats()
     }
-  }, [user, isClient])
+  }, [user, isClient, loadingTimeout])
+
+  // Limpiar el timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+    }
+  }, [loadingTimeout])
 
   // Función para obtener el icono de un logro
   const getAchievementIcon = (iconName: string) => {
@@ -84,11 +114,14 @@ export default function ProfilePage() {
     }
   }
 
+  // Forzar la finalización del loading después de 5 segundos
+  const loading = authLoading || loadingStats
+
   if (!isClient) {
     return null // No renderizar nada en el servidor
   }
 
-  if (loading || loadingStats) {
+  if (loading && isClient) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-purple-700 bg-purple-900/70 p-6 text-white">
@@ -101,12 +134,12 @@ export default function ProfilePage() {
     )
   }
 
-  if (error) {
+  if (error || authError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
         <div className="w-full max-w-md rounded-lg border border-red-700 bg-purple-900/70 p-6 text-white">
           <h1 className="mb-4 text-xl font-bold text-red-400">Error</h1>
-          <p className="text-gray-300">{error}</p>
+          <p className="text-gray-300">{error || authError}</p>
           <div className="mt-6 flex justify-center gap-4">
             <Button onClick={() => window.location.reload()} className="bg-yellow-500 text-black hover:bg-yellow-600">
               Intentar de nuevo
@@ -313,7 +346,9 @@ export default function ProfilePage() {
 
       <footer className="mt-auto border-t border-purple-700 bg-purple-900/50 py-4">
         <div className="container mx-auto">
-              <p className="text-sm text-gray-400">© 2025 WikiMillionaire. {t.general.credits}</p>
+          <p className="text-center text-sm text-gray-300">
+            © 2025 WikiMillionaire. Juego creado por Daniel Yepez Garces
+          </p>
         </div>
       </footer>
     </div>
