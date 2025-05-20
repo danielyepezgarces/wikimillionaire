@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Datos de usuario no proporcionados" }, { status: 400 })
     }
 
-    console.log("Sincronizando usuario desde cliente:", user)
+    // console.log("Sincronizando usuario desde cliente:", user)
 
     // Crear la respuesta
     const response = NextResponse.json({ success: true })

@@ -66,7 +66,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     return null
   }
 
-  console.log("WikimediaLoginButton: Estado actual:", { user, loading })
+  // console.log("WikimediaLoginButton: Estado actual:", { user, loading })
 
   // Mostrar un indicador de carga mientras se verifica la sesión
   if (loading) {
@@ -79,7 +79,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   }
 
   if (user) {
-    console.log("WikimediaLoginButton: Usuario autenticado:", user)
+    // console.log("WikimediaLoginButton: Usuario autenticado:", user)
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -144,7 +144,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     )
   }
 
-  console.log("WikimediaLoginButton: Usuario no autenticado")
+  // console.log("WikimediaLoginButton: Usuario no autenticado")
   return (
     <TooltipProvider>
       <Tooltip>

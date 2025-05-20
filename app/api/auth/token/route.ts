@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 })
     }
 
-    console.log("Procesando solicitud de token con código:", code.substring(0, 10) + "...")
-    console.log("CodeVerifier presente:", !!codeVerifier)
+    // console.log("Procesando solicitud de token con código:", code.substring(0, 10) + "...")
+    // console.log("CodeVerifier presente:", !!codeVerifier)
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID
     const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     params.append("client_secret", clientSecret)
     params.append("code_verifier", codeVerifier)
 
-    console.log("Enviando solicitud de token a Wikidata con parámetros:", {
+    // console.log("Enviando solicitud de token a Wikidata con parámetros:", {
       grant_type: "authorization_code",
       code: code.substring(0, 10) + "...", // Truncado por seguridad
       redirect_uri: redirectUri,
@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
     }
 
-    console.log("Respuesta del servidor de token de Wikidata:", response.status, response.statusText)
-    console.log("Headers de respuesta:", Object.fromEntries(response.headers.entries()))
+    // console.log("Respuesta del servidor de token de Wikidata:", response.status, response.statusText)
+    // console.log("Headers de respuesta:", Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = await response.json()
-    console.log("Token obtenido correctamente de Wikidata:", {
+    // console.log("Token obtenido correctamente de Wikidata:", {
       access_token: tokenData.access_token ? tokenData.access_token.substring(0, 10) + "..." : "no token",
       token_type: tokenData.token_type,
       expires_in: tokenData.expires_in,

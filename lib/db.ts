@@ -21,7 +21,7 @@ export async function query(text: string, params?: any[]) {
     const result = await sql(text, params || [])
 
     const duration = Date.now() - start
-    console.log("Consulta ejecutada", { text, duration, rows: result.length })
+    // console.log("Consulta ejecutada", { text, duration, rows: result.length })
 
     return result
   } catch (error) {
@@ -122,7 +122,7 @@ export async function initializeDatabase() {
       )
     `)
 
-    console.log("Base de datos inicializada correctamente")
+    // console.log("Base de datos inicializada correctamente")
   } catch (error) {
     console.error("Error al inicializar la base de datos:", error)
     throw error
