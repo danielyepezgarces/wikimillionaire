@@ -2,6 +2,15 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
+// Configuración de OAuth
+const OAUTH_CONFIG = {
+  clientId: "cd1155b5217d823cec353e1e7b5576a1",
+  authUrl: "https://www.wikidata.org/w/rest.php/oauth2/authorize",
+  tokenUrl: "https://www.wikidata.org/w/rest.php/oauth2/access_token",
+  userAgent: "WikiMillionaire/1.0 (https://wikimillionaire.com; contacto@wikimillionaire.com)",
+  sessionExpiry: 24 * 60 * 60 * 1000, // 24 horas
+}
+
 // Tipo para el usuario
 export type User = {
   id: string
@@ -26,10 +35,8 @@ type AuthContextType = {
   manualLogin: (userData: any) => void
 }
 
-// Crear el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Hook personalizado para usar el contexto
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -38,17 +45,35 @@ export function useAuth() {
   return context
 }
 
-// Proveedor del contexto
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
 
-  // Constantes para configuración
-  const SESSION_EXPIRY = 24 * 60 * 60 * 1000 // 24 horas de duración de sesión
+  // Generar code_verifier seguro (RFC 7636)
+  const generateCodeVerifier = (): string => {
+    const array = new Uint8Array(32)
+    crypto.getRandomValues(array)
+    return Array.from(array)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, 43) // Longitud mínima recomendada
+  }
 
-  // Función para verificar si hay un usuario en localStorage
+  // Calcular code_challenge correctamente
+  const calculateCodeChallenge = async (verifier: string): Promise<string> => {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(verifier)
+    const digest = await crypto.subtle.digest('SHA-256', data)
+    
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  }
+
+  // Función mejorada para obtener usuario de localStorage
   const getUserFromLocalStorage = (): User | null => {
     if (typeof window === "undefined") return null
 
@@ -56,50 +81,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userJson = localStorage.getItem("wikimillionaire_user")
       if (!userJson) return null
 
-      // Verificar si hay un timestamp de última actualización
-      const lastUpdateStr = localStorage.getItem("wikimillionaire_last_update")
-      if (lastUpdateStr) {
-        const lastUpdate = Number.parseInt(lastUpdateStr, 10)
-        const now = Date.now()
-
-        // Si han pasado más de 24 horas desde la última actualización, considerar la sesión expirada
-        if (now - lastUpdate > SESSION_EXPIRY) {
-          localStorage.removeItem("wikimillionaire_user")
-          localStorage.removeItem("wikimillionaire_last_update")
-          return null
-        }
-      }
-
-      // Validar que el objeto de usuario tenga la estructura correcta
-      const parsedUser = JSON.parse(userJson)
-      if (!parsedUser || typeof parsedUser !== "object") {
-        console.error("Formato de usuario inválido en localStorage")
+      const lastUpdate = Number(localStorage.getItem("wikimillionaire_last_update") || 0)
+      if (Date.now() - lastUpdate > OAUTH_CONFIG.sessionExpiry) {
+        localStorage.removeItem("wikimillionaire_user")
+        localStorage.removeItem("wikimillionaire_last_update")
         return null
       }
 
-      // Crear un objeto de usuario con valores predeterminados para todas las propiedades
-      const validatedUser: User = {
-        id: typeof parsedUser.id === "string" && parsedUser.id.length > 0 ? parsedUser.id : crypto.randomUUID(),
-        username: typeof parsedUser.username === "string" && parsedUser.username.length > 0 ? parsedUser.username : "Usuario",
-        wikimedia_id: typeof parsedUser.wikimedia_id === "string" ? parsedUser.wikimedia_id : "",
-        email: parsedUser.email || null,
-        avatar_url: parsedUser.avatar_url || null,
-        created_at: typeof parsedUser.created_at === "string" ? parsedUser.created_at : new Date().toISOString(),
-        last_login: typeof parsedUser.last_login === "string" ? parsedUser.last_login : new Date().toISOString(),
+      const parsedUser = JSON.parse(userJson)
+      
+      if (!parsedUser?.id || !parsedUser?.username || !parsedUser?.wikimedia_id) {
+        throw new Error("Datos de usuario incompletos")
       }
 
-
-      return validatedUser
+      return {
+        id: parsedUser.id,
+        username: parsedUser.username,
+        wikimedia_id: parsedUser.wikimedia_id,
+        email: parsedUser.email || null,
+        avatar_url: parsedUser.avatar_url || null,
+        created_at: parsedUser.created_at || new Date().toISOString(),
+        last_login: parsedUser.last_login || new Date().toISOString(),
+      }
     } catch (error) {
       console.error("Error al leer usuario de localStorage:", error)
-      // En caso de error, limpiar localStorage para evitar problemas futuros
       localStorage.removeItem("wikimillionaire_user")
       localStorage.removeItem("wikimillionaire_last_update")
       return null
     }
   }
 
-  // Función para guardar usuario en localStorage
   const saveUserToLocalStorage = (user: User | null) => {
     if (typeof window === "undefined") return
 
@@ -108,15 +119,122 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("wikimillionaire_user", JSON.stringify(user))
         localStorage.setItem("wikimillionaire_last_update", Date.now().toString())
       } else {
-        localStorage.removeItem("wikimillionaire_user")
-        localStorage.removeItem("wikimillionaire_last_update")
+        ["wikimillionaire_user", "wikimillionaire_last_update", 
+         "wikimillionaire_oauth_state", "wikimillionaire_oauth_code_verifier",
+         "wikimillionaire_oauth_timestamp"].forEach(key => {
+          localStorage.removeItem(key)
+        })
       }
     } catch (error) {
       console.error("Error al guardar usuario en localStorage:", error)
     }
   }
 
-  // Función para login manual (para depuración)
+  const getAuthUrl = async (): Promise<string> => {
+    try {
+      // 1. Generar parámetros PKCE
+      const state = crypto.randomUUID()
+      const codeVerifier = generateCodeVerifier()
+      const codeChallenge = await calculateCodeChallenge(codeVerifier)
+
+      // 2. Configurar URL base
+      const authUrl = new URL(OAUTH_CONFIG.authUrl)
+      
+      // 3. Añadir parámetros requeridos
+      authUrl.searchParams.append('client_id', OAUTH_CONFIG.clientId)
+      authUrl.searchParams.append('response_type', 'code')
+      authUrl.searchParams.append('redirect_uri', `${window.location.origin}/auth/callback`)
+      authUrl.searchParams.append('state', state)
+      authUrl.searchParams.append('code_challenge', codeChallenge)
+      authUrl.searchParams.append('code_challenge_method', 'S256')
+      
+      // 4. Guardar valores para el callback
+      localStorage.setItem("wikimillionaire_oauth_state", state)
+      localStorage.setItem("wikimillionaire_oauth_code_verifier", codeVerifier)
+      localStorage.setItem("wikimillionaire_oauth_timestamp", Date.now().toString())
+
+      return authUrl.toString()
+    } catch (error) {
+      console.error("Error en getAuthUrl:", error)
+      throw new Error("Error al generar URL de autenticación")
+    }
+  }
+
+  const login = async (code: string, codeVerifier: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // 1. Intercambiar el código por un token
+      const tokenResponse = await fetch("/api/auth/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": OAUTH_CONFIG.userAgent
+        },
+        body: JSON.stringify({
+          code,
+          codeVerifier,
+          client_id: OAUTH_CONFIG.clientId,
+          redirect_uri: `${window.location.origin}/auth/callback`
+        }),
+      })
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json()
+        throw new Error(errorData.error || "Error al obtener el token")
+      }
+
+      const tokenData = await tokenResponse.json()
+      setDebugInfo((prev: any) => ({ ...prev, tokenData }))
+
+      // 2. Obtener información del usuario
+      const userInfoResponse = await fetch("/api/auth/user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": OAUTH_CONFIG.userAgent
+        },
+        body: JSON.stringify({
+          accessToken: tokenData.access_token,
+        }),
+      })
+
+      if (!userInfoResponse.ok) {
+        const errorData = await userInfoResponse.json()
+        throw new Error(errorData.error || "Error al obtener información del usuario")
+      }
+
+      const userData = await userInfoResponse.json()
+      setDebugInfo((prev: any) => ({ ...prev, userData }))
+      setUser(userData as User)
+      saveUserToLocalStorage(userData)
+
+      window.location.href = "/"
+    } catch (err) {
+      console.error("Error al iniciar sesión:", err)
+      setDebugInfo((prev: any) => ({ ...prev, loginError: err }))
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const logout = async () => {
+    try {
+      setLoading(true)
+      saveUserToLocalStorage(null)
+      setUser(null)
+      window.location.href = "/"
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err)
+      setDebugInfo((prev: any) => ({ ...prev, logoutError: err }))
+      setError("Error al cerrar sesión")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const manualLogin = (userData: any) => {
     try {
       const user = {
@@ -138,165 +256,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Modificar la función checkSession para usar SOLO localStorage
   const checkSession = async () => {
     try {
-      // Obtener usuario de localStorage
       const localUser = getUserFromLocalStorage()
-
       if (localUser) {
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
       } else {
         setUser(null)
-        setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
       }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
-      // En caso de error, asegurarse de que el usuario sea null
       setUser(null)
     }
   }
 
-  // Inicializar y verificar la sesión al cargar
-  useEffect(() => {
-    console.log("AuthProvider: Inicializando...")
-    checkSession()
-  }, [])
-
-  // Función para refrescar los datos del usuario
   const refreshUser = async () => {
     await checkSession()
   }
 
-  // Función para obtener la URL de autenticación
-    const getAuthUrl = async (): Promise<string> => {
-    try {
-      // Generar un nuevo estado y codeVerifier
-      const state = crypto.randomUUID()
-      const codeVerifier = crypto.randomUUID() + crypto.randomUUID()
+  useEffect(() => {
+    checkSession()
+  }, [])
 
-      // Guardar en localStorage para recuperarlo después
-      localStorage.setItem("wikimillionaire_oauth_state", state)
-      localStorage.setItem("wikimillionaire_oauth_code_verifier", codeVerifier)
-      localStorage.setItem("wikimillionaire_oauth_timestamp", Date.now().toString())
-
-      // Calcular code challenge (SHA-256)
-      const encoder = new TextEncoder()
-      const data = encoder.encode(codeVerifier)
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      const hashBase64 = btoa(String.fromCharCode(...hashArray))
-      const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
-
-      // Construir la URL de autorización
-      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // Reemplazar con tu client ID real
-      const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
-
-      const authUrl =
-        `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
-        `client_id=${clientId}` +
-        `&response_type=code` +
-        `&redirect_uri=${redirectUri}` +
-        `&state=${state}` +
-        `&code_challenge=${codeChallenge}` +
-        `&code_challenge_method=S256`
-
-      return authUrl
-    } catch (error) {
-      console.error("Error al generar URL de autenticación:", error)
-      throw error
-    }
-  }
-
-  // Función para iniciar sesión
-  const login = async (code: string, codeVerifier: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // 1. Intercambiar el código por un token
-      const tokenResponse = await fetch("/api/auth/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code,
-          codeVerifier,
-        }),
-      })
-
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json()
-        throw new Error(errorData.error || "Error al obtener el token")
-      }
-
-      const tokenData = await tokenResponse.json()
-      console.log("Token obtenido correctamente")
-      setDebugInfo((prev: any) => ({ ...prev, tokenData }))
-
-      // 2. Obtener información del usuario
-      const userInfoResponse = await fetch("/api/auth/user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          accessToken: tokenData.access_token,
-        }),
-      })
-
-      if (!userInfoResponse.ok) {
-        const errorData = await userInfoResponse.json()
-        throw new Error(errorData.error || "Error al obtener información del usuario")
-      }
-
-      const userData = await userInfoResponse.json()
-      console.log("Datos de usuario obtenidos después de login:", userData)
-      setDebugInfo((prev: any) => ({ ...prev, userData }))
-      setUser(userData as User)
-      saveUserToLocalStorage(userData) // Guardar en localStorage
-
-      // Refrescar la página para asegurar que todo se actualice correctamente
-      window.location.href = "/"
-    } catch (err) {
-      console.error("Error al iniciar sesión:", err)
-      setDebugInfo((prev: any) => ({ ...prev, loginError: err }))
-      setError("Error al iniciar sesión")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Función para cerrar sesión
-  const logout = async () => {
-    try {
-      setLoading(true)
-
-      // Limpiar localStorage
-      localStorage.removeItem("wikimillionaire_user")
-      localStorage.removeItem("wikimillionaire_last_update")
-      localStorage.removeItem("wikimillionaire_oauth_state")
-      localStorage.removeItem("wikimillionaire_oauth_code_verifier")
-      localStorage.removeItem("wikimillionaire_oauth_timestamp")
-
-      // Actualizar el estado
-      setUser(null)
-
-      // Recargar la página para asegurar que todo se actualice correctamente
-      window.location.href = "/"
-    } catch (err) {
-      console.error("Error al cerrar sesión:", err)
-      setDebugInfo((prev: any) => ({ ...prev, logoutError: err }))
-      setError("Error al cerrar sesión")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Valor del contexto
   const value = {
     user,
     loading,
