@@ -72,9 +72,18 @@ export type Translations = {
       daily: string
       weekly: string
       monthly: string
+      all: string
     }
     noData: string
     points: string
+    resetInfo: string
+    resetsIn: string
+    position: string
+    player: string
+    score: string
+    games: string
+    totalScore: string
+    tooltip: string
   }
   auth: {
     login: string
@@ -262,9 +271,18 @@ export const es: Translations = {
       daily: "Diario",
       weekly: "Semanal",
       monthly: "Mensual",
+      all: "Todos",
     },
     noData: "No hay datos disponibles para este período.",
     points: "puntos",
+    resetInfo: "Próximo reinicio",
+    resetsIn: "Reinicio en",
+    position: "Posición",
+    player: "Jugador",
+    score: "Puntuación",
+    games: "Partidas",
+    totalScore: "Puntuación total",
+    tooltip: "Suma total de puntos en este período",
   },
   auth: {
     login: "Iniciar sesión con Wikidata",
@@ -452,9 +470,18 @@ export const en: Translations = {
       daily: "Daily",
       weekly: "Weekly",
       monthly: "Monthly",
+      all: "All Time",
     },
     noData: "No data available for this period.",
     points: "points",
+    resetInfo: "Next reset",
+    resetsIn: "Resets in",
+    position: "Position",
+    player: "Player",
+    score: "Score",
+    games: "Games",
+    totalScore: "Total score",
+    tooltip: "Total sum of points in this period",
   },
   auth: {
     login: "Login with Wikidata",
@@ -642,9 +669,18 @@ export const fr: Translations = {
       daily: "Quotidien",
       weekly: "Hebdomadaire",
       monthly: "Mensuel",
+      all: "Tous les Temps",
     },
     noData: "Aucune donnée disponible pour cette période.",
     points: "points",
+    resetInfo: "Prochain réinitialisation",
+    resetsIn: "Réinitialisation dans",
+    position: "Position",
+    player: "Joueur",
+    score: "Score",
+    games: "Parties",
+    totalScore: "Score total",
+    tooltip: "Somme totale de points dans cette période",
   },
   auth: {
     login: "Se connecter avec Wikidata",
@@ -832,9 +868,18 @@ export const de: Translations = {
       daily: "Täglich",
       weekly: "Wöchentlich",
       monthly: "Monatlich",
+      all: "Gesamtzeit",
     },
     noData: "Keine Daten für diesen Zeitraum verfügbar.",
     points: "Punkte",
+    resetInfo: "Nächster Reset",
+    resetsIn: "Resets in",
+    position: "Position",
+    player: "Spieler",
+    score: "Score",
+    games: "Spiele",
+    totalScore: "Gesamtpunktzahl",
+    tooltip: "Gesamtsumme der Punkte in diesem Zeitraum",
   },
   auth: {
     login: "Mit Wikidata anmelden",
@@ -1022,9 +1067,18 @@ export const pt: Translations = {
       daily: "Diário",
       weekly: "Semanal",
       monthly: "Mensal",
+      all: "Todos os Tempos",
     },
     noData: "Não há dados disponíveis para este período.",
     points: "pontos",
+    resetInfo: "Próximo reset",
+    resetsIn: "Resets em",
+    position: "Posição",
+    player: "Jogador",
+    score: "Score",
+    games: "Jogos",
+    totalScore: "Pontuação total",
+    tooltip: "Soma total de pontos neste período",
   },
   auth: {
     login: "Entrar com Wikidata",

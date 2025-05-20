@@ -21,6 +21,13 @@ export type Achievement = {
   icon: string
 }
 
+// Tipo para la información de reinicio del ranking
+export type RankingResetInfo = {
+  period: "daily" | "weekly" | "monthly" | "all"
+  nextReset: Date
+  formattedNextReset: string
+}
+
 // Función para guardar una puntuación
 export async function saveScore(userId: string, score: number) {
   try {
@@ -61,19 +68,20 @@ export async function getLeaderboard(period: "daily" | "weekly" | "monthly" | "a
       timeFilter = `WHERE s.created_at >= '${monthStart}'`
     }
 
+    // Modificado para sumar las puntuaciones por usuario en el período
     const result = await query(
       `SELECT 
         u.id as user_id, 
         u.username, 
         u.avatar_url, 
-        MAX(s.score) as highest_score, 
+        SUM(s.score) as total_score, 
         COUNT(s.id) as games_played,
         MAX(s.created_at) as last_played
        FROM scores s
        JOIN users u ON s.user_id = u.id
        ${timeFilter}
        GROUP BY u.id, u.username, u.avatar_url
-       ORDER BY highest_score DESC, games_played DESC
+       ORDER BY total_score DESC, games_played DESC
        LIMIT $1`,
       [limit],
     )
@@ -83,14 +91,63 @@ export async function getLeaderboard(period: "daily" | "weekly" | "monthly" | "a
       userId: row.user_id,
       username: row.username,
       avatarUrl: row.avatar_url,
-      highestScore: row.highest_score,
-      gamesPlayed: row.games_played,
+      score: Number.parseInt(row.total_score), // Cambiado de highestScore a score (suma total)
+      gamesPlayed: Number.parseInt(row.games_played),
       lastPlayed: row.last_played,
     }))
   } catch (error) {
     console.error("Error al obtener tabla de clasificación:", error)
     throw error
   }
+}
+
+// Función para obtener información sobre cuándo se reinicia cada ranking
+export function getRankingResetInfo(): RankingResetInfo[] {
+  const now = new Date()
+
+  // Calcular próximo reinicio diario (mañana a las 00:00)
+  const dailyReset = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+
+  // Calcular próximo reinicio semanal (próximo lunes a las 00:00)
+  const daysUntilMonday = (7 - now.getDay()) % 7 || 7 // Si hoy es lunes (0), entonces 7 días
+  const weeklyReset = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday)
+
+  // Calcular próximo reinicio mensual (primer día del próximo mes)
+  const monthlyReset = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+
+  // Formatear las fechas
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  return [
+    {
+      period: "daily",
+      nextReset: dailyReset,
+      formattedNextReset: formatDate(dailyReset),
+    },
+    {
+      period: "weekly",
+      nextReset: weeklyReset,
+      formattedNextReset: formatDate(weeklyReset),
+    },
+    {
+      period: "monthly",
+      nextReset: monthlyReset,
+      formattedNextReset: formatDate(monthlyReset),
+    },
+    {
+      period: "all",
+      nextReset: new Date(9999, 11, 31), // Nunca se reinicia
+      formattedNextReset: "Nunca",
+    },
+  ]
 }
 
 // Función para obtener las estadísticas de un usuario
@@ -113,11 +170,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     const rankResult = await query(
       `SELECT COUNT(*) as rank
        FROM (
-         SELECT user_id, MAX(score) as max_score
+         SELECT user_id, SUM(score) as total_score
          FROM scores
          GROUP BY user_id
-         HAVING MAX(score) > (
-           SELECT MAX(score) FROM scores WHERE user_id = $1
+         HAVING SUM(score) > (
+           SELECT SUM(score) FROM scores WHERE user_id = $1
          )
        ) as better_scores`,
       [userId],
@@ -274,7 +331,7 @@ async function checkAchievements(userId: string, score: number) {
     // Verificar logro de top 10
     if (stats.rank > 10) {
       const leaderboard = await getLeaderboard("all", 10)
-      const wouldBeInTop10 = leaderboard.length < 10 || score > leaderboard[leaderboard.length - 1].highestScore
+      const wouldBeInTop10 = leaderboard.length < 10 || score > leaderboard[leaderboard.length - 1].score
 
       if (wouldBeInTop10) {
         await unlockAchievement(userId, "top_10")

@@ -1,259 +1,89 @@
 "use client"
-
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getLeaderboard } from "@/lib/scores"
-import { ArrowLeft, Trophy, Medal, Award } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, Trophy, Medal, Clock, Info } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
-import { useAuth } from "@/contexts/auth-context"
+import { getLeaderboard, getRankingResetInfo, type RankingResetInfo } from "@/lib/scores"
+import Image from "next/image"
+import { CountdownTimer } from "@/components/countdown-timer"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type LeaderboardEntry = {
-  id: string
+  rank: number
+  userId: string
   username: string
+  avatarUrl: string | null
   score: number
-  date: string
-  avatar_url?: string | null
+  gamesPlayed: number
+  lastPlayed: string
 }
 
 export default function LeaderboardPage() {
   const { locale, translations: t, changeLocale } = useLocale()
-  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("daily")
-  const [leaderboard, setLeaderboard] = useState<{
-    daily: LeaderboardEntry[]
-    weekly: LeaderboardEntry[]
-    monthly: LeaderboardEntry[]
-  }>({
-    daily: [],
-    weekly: [],
-    monthly: [],
-  })
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [resetInfo, setResetInfo] = useState<RankingResetInfo[]>([])
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  useEffect(() => {
     const fetchLeaderboard = async () => {
-      setLoading(true)
       try {
-        const data = await getLeaderboard()
+        setLoading(true)
+        setError(null)
+
+        // Obtener datos del leaderboard
+        const data = await getLeaderboard(activeTab as any)
         setLeaderboard(data)
+
+        // Obtener información de reinicio
+        const resetData = getRankingResetInfo()
+        setResetInfo(resetData)
       } catch (error) {
-        console.error("Error fetching leaderboard:", error)
-        // Fallback a datos locales si falla
-        const localData = await getLocalLeaderboard()
-        setLeaderboard(localData)
+        console.error("Error al cargar leaderboard:", error)
+        setError("Error al cargar la tabla de clasificación. Por favor, inténtalo de nuevo.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchLeaderboard()
-  }, [])
-
-  const handleNavigation = (destination: string) => {
     if (isClient) {
-      window.location.href = destination
+      fetchLeaderboard()
+    }
+  }, [activeTab, isClient])
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+  }
+
+  const getCurrentResetInfo = () => {
+    return resetInfo.find((info) => info.period === activeTab) || resetInfo[0]
+  }
+
+  const handleNavigation = (path: string) => {
+    if (isClient) {
+      window.location.href = path
     }
   }
 
-  // Función para obtener datos de clasificación de localStorage (fallback)
-  const getLocalLeaderboard = async () => {
-    try {
-      const scoresJson = localStorage.getItem("wikimillionaire-scores")
-      const scores: any[] = scoresJson ? JSON.parse(scoresJson) : []
-
-      // Obtener la fecha actual
-      const now = new Date()
-
-      // Filtrar puntuaciones para cada período
-      const daily = scores.filter((score) => {
-        const scoreDate = new Date(score.date)
-        return scoreDate.toDateString() === now.toDateString()
-      })
-
-      const weekly = scores.filter((score) => {
-        const scoreDate = new Date(score.date)
-        const dayDiff = Math.floor((now.getTime() - scoreDate.getTime()) / (1000 * 60 * 60 * 24))
-        return dayDiff < 7
-      })
-
-      const monthly = scores.filter((score) => {
-        const scoreDate = new Date(score.date)
-        return scoreDate.getMonth() === now.getMonth() && scoreDate.getFullYear() === now.getFullYear()
-      })
-
-      // Ordenar puntuaciones de mayor a menor
-      const sortByScore = (a: any, b: any) => b.score - a.score
-
-      // Formatear los resultados
-      const formatScores = (scores: any[]): LeaderboardEntry[] => {
-        return scores.map((item) => ({
-          id: item.id || Math.random().toString(36).substring(2, 9),
-          username: item.username,
-          score: item.score,
-          date: item.date,
-          avatar_url: null,
-        }))
-      }
-
-      return {
-        daily: daily.length > 0 ? formatScores(daily.sort(sortByScore)) : [],
-        weekly: weekly.length > 0 ? formatScores(weekly.sort(sortByScore)) : [],
-        monthly: monthly.length > 0 ? formatScores(monthly.sort(sortByScore)) : [],
-      }
-    } catch (error) {
-      console.error("Error getting local leaderboard:", error)
-      return {
-        daily: [],
-        weekly: [],
-        monthly: [],
-      }
-    }
-  }
-
-  const renderLeaderboardTable = (entries: LeaderboardEntry[]) => {
-    if (loading) {
-      return (
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
-        </div>
-      )
-    }
-
-    if (entries.length === 0) {
-      return (
-        <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-          <Trophy className="h-12 w-12 text-gray-400" />
-          <p className="text-gray-400">{t.leaderboard.noData}</p>
-          <Button 
-            className="bg-yellow-500 text-black hover:bg-yellow-600"
-            onClick={() => handleNavigation("/play")}
-          >
-            {t.general.play}
-          </Button>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-4">
-        {entries.slice(0, 3).map((entry, index) => (
-          <div
-            key={index}
-            className={`flex items-center justify-between rounded-lg border p-4 ${
-              index === 0
-                ? "border-yellow-500 bg-yellow-500/10"
-                : index === 1
-                  ? "border-gray-400 bg-gray-400/10"
-                  : "border-amber-700 bg-amber-700/10"
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  index === 0
-                    ? "bg-yellow-500 text-black"
-                    : index === 1
-                      ? "bg-gray-400 text-black"
-                      : "bg-amber-700 text-white"
-                }`}
-              >
-                {index === 0 ? (
-                  <Trophy className="h-5 w-5" />
-                ) : index === 1 ? (
-                  <Medal className="h-5 w-5" />
-                ) : (
-                  <Award className="h-5 w-5" />
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                {entry.avatar_url ? (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                    <Image
-                      src={entry.avatar_url || "/placeholder.svg"}
-                      alt={entry.username}
-                      width={32}
-                      height={32}
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full bg-purple-800">
-                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-white">
-                      {entry.username.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <p className="font-medium text-white">{entry.username}</p>
-                  <p className="text-sm text-gray-400">{new Date(entry.date).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-yellow-400">{entry.score.toLocaleString()}</p>
-              <p className="text-sm text-gray-400">{t.leaderboard.points}</p>
-            </div>
-          </div>
-        ))}
-
-        {entries.slice(3).map((entry, index) => (
-          <div
-            key={index + 3}
-            className="flex items-center justify-between rounded-lg border border-purple-700 bg-purple-800/30 p-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-800 text-white">
-                {index + 4}
-              </div>
-              <div className="flex items-center gap-3">
-                {entry.avatar_url ? (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                    <Image
-                      src={entry.avatar_url || "/placeholder.svg"}
-                      alt={entry.username}
-                      width={32}
-                      height={32}
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="relative h-8 w-8 overflow-hidden rounded-full bg-purple-800">
-                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-white">
-                      {entry.username.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <p className="font-medium text-white">{entry.username}</p>
-                  <p className="text-sm text-gray-400">{new Date(entry.date).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-white">{entry.score.toLocaleString()}</p>
-              <p className="text-sm text-gray-400">{t.leaderboard.points}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+  if (!isClient) {
+    return null // No renderizar nada en el servidor
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
-          <button 
-            onClick={() => handleNavigation("/")}
-            className="text-gray-300 hover:text-white"
-          >
+          <button onClick={() => handleNavigation("/")} className="text-gray-300 hover:text-white">
             <ArrowLeft className="h-6 w-6" />
           </button>
           <div className="text-center">
@@ -276,32 +106,57 @@ export default function LeaderboardPage() {
             <CardDescription className="text-gray-300">{t.leaderboard.description}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-purple-800/50">
-                <TabsTrigger value="daily" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
-                  {t.leaderboard.tabs.daily}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="weekly"
-                  className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black"
-                >
-                  {t.leaderboard.tabs.weekly}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="monthly"
-                  className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black"
-                >
-                  {t.leaderboard.tabs.monthly}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="daily" className="mt-6">
-                {renderLeaderboardTable(leaderboard.daily)}
+            <Tabs defaultValue="daily" value={activeTab} onValueChange={handleTabChange}>
+              <div className="flex items-center justify-between">
+                <TabsList className="bg-purple-800/50">
+                  <TabsTrigger value="daily" className="data-[state=active]:bg-purple-700">
+                    {t.leaderboard.tabs.daily}
+                  </TabsTrigger>
+                  <TabsTrigger value="weekly" className="data-[state=active]:bg-purple-700">
+                    {t.leaderboard.tabs.weekly}
+                  </TabsTrigger>
+                  <TabsTrigger value="monthly" className="data-[state=active]:bg-purple-700">
+                    {t.leaderboard.tabs.monthly}
+                  </TabsTrigger>
+                  <TabsTrigger value="all" className="data-[state=active]:bg-purple-700">
+                    Todos
+                  </TabsTrigger>
+                </TabsList>
+
+                {resetInfo.length > 0 && activeTab !== "all" && (
+                  <div className="flex items-center gap-1 text-sm text-yellow-400">
+                    <Clock className="h-4 w-4" />
+                    <span>Reinicio en: </span>
+                    <CountdownTimer targetDate={getCurrentResetInfo().nextReset} className="font-bold" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="ml-1 h-4 w-4 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            El ranking{" "}
+                            {activeTab === "daily" ? "diario" : activeTab === "weekly" ? "semanal" : "mensual"} se
+                            reiniciará el {getCurrentResetInfo().formattedNextReset}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
+              </div>
+
+              <TabsContent value="daily" className="mt-4">
+                {renderLeaderboardContent()}
               </TabsContent>
-              <TabsContent value="weekly" className="mt-6">
-                {renderLeaderboardTable(leaderboard.weekly)}
+              <TabsContent value="weekly" className="mt-4">
+                {renderLeaderboardContent()}
               </TabsContent>
-              <TabsContent value="monthly" className="mt-6">
-                {renderLeaderboardTable(leaderboard.monthly)}
+              <TabsContent value="monthly" className="mt-4">
+                {renderLeaderboardContent()}
+              </TabsContent>
+              <TabsContent value="all" className="mt-4">
+                {renderLeaderboardContent()}
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -310,9 +165,116 @@ export default function LeaderboardPage() {
 
       <footer className="mt-auto border-t border-purple-700 bg-purple-900/50 py-4">
         <div className="container mx-auto">
-          <p className="text-center text-sm text-gray-300">© 2025 WikiMillionaire. {t.general.credits}</p>
+          <p className="text-center text-sm text-gray-300">
+            © 2025 WikiMillionaire. Juego creado por Daniel Yepez Garces
+          </p>
         </div>
       </footer>
     </div>
   )
+
+  function renderLeaderboardContent() {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
+        </div>
+      )
+    }
+
+    if (error) {
+      return (
+        <div className="rounded-lg border border-red-700 bg-purple-800/30 p-4 text-center">
+          <p className="text-red-400">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="mt-4 border-purple-700 text-white hover:bg-purple-800/50"
+          >
+            Intentar de nuevo
+          </Button>
+        </div>
+      )
+    }
+
+    if (leaderboard.length === 0) {
+      return (
+        <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-8 text-center">
+          <p className="text-gray-300">{t.leaderboard.noData}</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-purple-700 bg-purple-800/30 p-4">
+          <div className="flex items-center justify-between text-sm font-medium text-gray-400">
+            <div className="w-16 text-center">Posición</div>
+            <div className="flex-1">Jugador</div>
+            <div className="w-24 text-right">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger className="flex items-center justify-end gap-1">
+                    <span>Puntuación</span>
+                    <Info className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Suma total de puntos en este período</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="w-24 text-right">Partidas</div>
+          </div>
+        </div>
+
+        {leaderboard.map((entry) => (
+          <div
+            key={entry.userId}
+            className="rounded-lg border border-purple-700 bg-purple-800/30 p-4 transition-colors hover:bg-purple-800/50"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-16 text-center">
+                {entry.rank === 1 ? (
+                  <div className="flex justify-center">
+                    <Trophy className="h-6 w-6 text-yellow-400" />
+                  </div>
+                ) : entry.rank === 2 ? (
+                  <div className="flex justify-center">
+                    <Medal className="h-6 w-6 text-gray-300" />
+                  </div>
+                ) : entry.rank === 3 ? (
+                  <div className="flex justify-center">
+                    <Medal className="h-6 w-6 text-amber-700" />
+                  </div>
+                ) : (
+                  <span className="text-lg font-bold">{entry.rank}</span>
+                )}
+              </div>
+              <div className="flex flex-1 items-center gap-3">
+                <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-purple-700">
+                  {entry.avatarUrl ? (
+                    <Image
+                      src={entry.avatarUrl || "/placeholder.svg"}
+                      alt={entry.username}
+                      width={40}
+                      height={40}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-purple-800 text-sm font-bold text-white">
+                      {entry.username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium">{entry.username}</span>
+              </div>
+              <div className="w-24 text-right font-bold text-yellow-400">{entry.score.toLocaleString()}</div>
+              <div className="w-24 text-right text-gray-300">{entry.gamesPlayed}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 }
