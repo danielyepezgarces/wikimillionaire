@@ -37,14 +37,14 @@ export function AuthDebug() {
     setShowCookies(!showCookies)
   }
 
-  const handleCreateSession = async () => {
+  const handleCreateManualUser = async () => {
     try {
       if (!wikimediaId) {
         alert("Por favor, ingresa un Wikimedia ID")
         return
       }
 
-      const response = await fetch("/api/auth/session", {
+      const response = await fetch("/api/auth/manual-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,17 +57,17 @@ export function AuthDebug() {
       })
 
       const data = await response.json()
-      console.log("Respuesta de create-session:", data)
+      console.log("Respuesta de manual-login:", data)
 
       if (response.ok) {
-        alert("Sesión creada correctamente. Recargando página...")
+        alert("Usuario creado manualmente. Recargando página...")
         window.location.reload()
       } else {
-        alert(`Error al crear sesión: ${data.error}`)
+        alert(`Error al crear usuario: ${data.error}`)
       }
     } catch (error) {
-      console.error("Error al crear sesión:", error)
-      alert(`Error al crear sesión: ${error}`)
+      console.error("Error al crear usuario manualmente:", error)
+      alert(`Error al crear usuario: ${error}`)
     }
   }
 
@@ -143,7 +143,7 @@ export function AuthDebug() {
       </div>
 
       <div className="mb-2">
-        <strong>Crear Sesión Manual:</strong>
+        <strong>Crear Usuario Manual:</strong>
         <div className="mt-1 space-y-2">
           <input
             type="text"
@@ -159,8 +159,8 @@ export function AuthDebug() {
             onChange={(e) => setUsername(e.target.value)}
             className="w-full p-1 bg-gray-800 border border-gray-700 rounded"
           />
-          <Button variant="outline" size="sm" onClick={handleCreateSession}>
-            Crear Sesión
+          <Button variant="outline" size="sm" onClick={handleCreateManualUser}>
+            Crear Usuario
           </Button>
         </div>
       </div>

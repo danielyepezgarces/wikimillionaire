@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { deleteSession } from "@/lib/session"
+import { deleteUserCookie } from "@/lib/cookie-auth"
 
 export async function POST() {
   try {
-    await deleteSession()
+    deleteUserCookie()
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error("Error al cerrar sesión:", error)

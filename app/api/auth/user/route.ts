@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createSession } from "@/lib/session"
+import { createUserCookie } from "@/lib/cookie-auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
 
           console.log("Usando información de usuario de fallback:", fallbackUserInfo)
 
-          // Crear sesión para el usuario de fallback
-          const session = await createSession({
+          // Crear usuario en cookie
+          const user = await createUserCookie({
             username: fallbackUserInfo.username,
             wikimedia_id: fallbackUserInfo.sub,
             email: null,
           })
 
-          return NextResponse.json(session)
+          return NextResponse.json(user)
         }
 
         // Intentar parsear la respuesta alternativa
@@ -131,14 +131,14 @@ export async function POST(request: NextRequest) {
 
         console.log("Información del usuario obtenida (alternativa):", userInfo)
 
-        // Crear sesión para el usuario
-        const session = await createSession({
+        // Crear usuario en cookie
+        const user = await createUserCookie({
           username: userInfo.username,
           wikimedia_id: userInfo.sub,
           email: userInfo.email,
         })
 
-        return NextResponse.json(session)
+        return NextResponse.json(user)
       }
 
       return NextResponse.json(
@@ -157,14 +157,14 @@ export async function POST(request: NextRequest) {
 
     console.log("Información del usuario obtenida de Wikidata:", userInfo)
 
-    // Crear sesión para el usuario
-    const session = await createSession({
+    // Crear usuario en cookie
+    const user = await createUserCookie({
       username: userInfo.username,
       wikimedia_id: userInfo.sub,
       email: userInfo.email || null,
     })
 
-    return NextResponse.json(session)
+    return NextResponse.json(user)
   } catch (error: any) {
     console.error("Error en el endpoint de usuario:", error)
     return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 })
