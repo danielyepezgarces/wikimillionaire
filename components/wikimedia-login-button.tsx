@@ -28,17 +28,23 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Asegurarse de que el componente está montado para evitar problemas de hidratación
   useEffect(() => {
     setMounted(true)
     // Intentar refrescar el usuario al montar el componente
-    refreshUser()
+    try {
+      refreshUser()
+    } catch (error) {
+      console.error("Error al refrescar usuario:", error)
+    }
   }, [refreshUser])
 
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
+      setError(null)
 
       // Obtener la URL de autenticación
       const authUrl = await getAuthUrl()
@@ -47,6 +53,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
       window.location.href = authUrl
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
+      setError("Error al iniciar sesión")
       setIsLoggingIn(false)
     }
   }
@@ -54,10 +61,30 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
+      setError(null)
       await logout()
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
+      setError("Error al cerrar sesión")
       setIsLoggingOut(false)
+    }
+  }
+
+  const handleProfileClick = () => {
+    try {
+      router.push("/profile")
+    } catch (error) {
+      console.error("Error al navegar al perfil:", error)
+      setError("Error al navegar al perfil")
+    }
+  }
+
+  const handleSettingsClick = () => {
+    try {
+      router.push("/settings")
+    } catch (error) {
+      console.error("Error al navegar a configuración:", error)
+      setError("Error al navegar a configuración")
     }
   }
 
@@ -66,7 +93,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     return null
   }
 
-  // console.log("WikimediaLoginButton: Estado actual:", { user, loading })
 
   // Mostrar un indicador de carga mientras se verifica la sesión
   if (loading) {
@@ -79,7 +105,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   }
 
   if (user) {
-    // console.log("WikimediaLoginButton: Usuario autenticado:", user)
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -94,7 +119,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-purple-800 text-white">
-                {user.username.charAt(0).toUpperCase()}
+                {user.username && user.username.charAt(0).toUpperCase()}
               </div>
             )}
             <span className="sr-only">{user.username}</span>
@@ -103,7 +128,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
         <DropdownMenuContent align="end" className="w-56 bg-purple-900 border-purple-700 text-white">
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user.username}</p>
+              <p className="text-sm font-medium leading-none">{user.username || "Usuario"}</p>
               {user.email ? (
                 <p className="text-xs leading-none text-gray-400">{user.email}</p>
               ) : (
@@ -114,14 +139,14 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
           <DropdownMenuSeparator className="bg-purple-700" />
           <DropdownMenuItem
             className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={() => router.push("/profile")}
+            onClick={handleProfileClick}
           >
             <User className="mr-2 h-4 w-4" />
             <span>Perfil</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer text-white hover:bg-purple-800 hover:text-white"
-            onClick={() => router.push("/settings")}
+            onClick={handleSettingsClick}
           >
             <Settings className="mr-2 h-4 w-4" />
             <span>Configuración</span>
@@ -144,7 +169,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     )
   }
 
-  // console.log("WikimediaLoginButton: Usuario no autenticado")
   return (
     <TooltipProvider>
       <Tooltip>
