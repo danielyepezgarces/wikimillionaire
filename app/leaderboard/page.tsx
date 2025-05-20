@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -35,8 +34,10 @@ export default function LeaderboardPage() {
     monthly: [],
   })
   const [loading, setLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     const fetchLeaderboard = async () => {
       setLoading(true)
       try {
@@ -54,6 +55,12 @@ export default function LeaderboardPage() {
 
     fetchLeaderboard()
   }, [])
+
+  const handleNavigation = (destination: string) => {
+    if (isClient) {
+      window.location.href = destination
+    }
+  }
 
   // Función para obtener datos de clasificación de localStorage (fallback)
   const getLocalLeaderboard = async () => {
@@ -124,8 +131,11 @@ export default function LeaderboardPage() {
         <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
           <Trophy className="h-12 w-12 text-gray-400" />
           <p className="text-gray-400">{t.leaderboard.noData}</p>
-          <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600">
-            <Link href="/play">{t.general.play}</Link>
+          <Button 
+            className="bg-yellow-500 text-black hover:bg-yellow-600"
+            onClick={() => handleNavigation("/play")}
+          >
+            {t.general.play}
           </Button>
         </div>
       )
@@ -240,9 +250,12 @@ export default function LeaderboardPage() {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="text-gray-300 hover:text-white">
+          <button 
+            onClick={() => handleNavigation("/")}
+            className="text-gray-300 hover:text-white"
+          >
             <ArrowLeft className="h-6 w-6" />
-          </Link>
+          </button>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white">
               <span className="text-yellow-400">Wiki</span>Millionaire
@@ -293,12 +306,6 @@ export default function LeaderboardPage() {
             </Tabs>
           </CardContent>
         </Card>
-
-        <div className="mt-6 mb-6 flex justify-center">
-          <Button asChild className="bg-yellow-500 text-black hover:bg-yellow-600">
-            <Link href="/play">{t.general.play}</Link>
-          </Button>
-        </div>
       </div>
 
       <footer className="mt-auto border-t border-purple-700 bg-purple-900/50 py-4">
