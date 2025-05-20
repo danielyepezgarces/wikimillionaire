@@ -94,6 +94,8 @@ export type Translations = {
     title: string
     welcome: string
     welcomesubtitle: string
+    joinedAt: string
+    lastLogin: string
     stats: {
       title: string
       gamesPlayed: string
