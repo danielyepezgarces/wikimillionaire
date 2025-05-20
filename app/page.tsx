@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useEffect, useState, Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Trophy, Brain, Users } from "lucide-react"
@@ -9,7 +9,6 @@ import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
 
-// Envolver el componente principal en un Suspense
 export default function HomePage() {
   return (
     <Suspense fallback={<div>Cargando...</div>}>
@@ -18,16 +17,17 @@ export default function HomePage() {
   )
 }
 
-// Componente que contiene el contenido real de la página
 function HomeContent() {
   const { locale, translations: t, changeLocale } = useLocale()
   const { user } = useAuth()
   const [showFeatures, setShowFeatures] = useState(false)
 
-  // Mostrar las características después de un breve retraso para una animación suave
-  setTimeout(() => {
-    setShowFeatures(true)
-  }, 500)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFeatures(true)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950">
@@ -68,9 +68,9 @@ function HomeContent() {
 
         {/* Features */}
         <div
-          className={`grid gap-8 md:grid-cols-3 ${
+          className={`grid gap-8 md:grid-cols-3 transition-all duration-1000 ease-out ${
             showFeatures ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          } transition-all duration-1000 ease-out`}
+          }`}
         >
           <div className="rounded-lg border border-purple-700 bg-purple-900/50 p-6 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/20">
