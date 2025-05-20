@@ -23,6 +23,7 @@ type AuthContextType = {
   getAuthUrl: () => Promise<string>
   refreshUser: () => Promise<void>
   debugInfo: any
+  manualLogin: (userData: any) => void
 }
 
 // Crear el contexto
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
   const [isInitialized, setIsInitialized] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   // Función para verificar si hay un usuario en localStorage (fallback)
   const getUserFromLocalStorage = (): User | null => {
@@ -71,22 +73,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Función para login manual (para depuración)
+  const manualLogin = (userData: any) => {
+    const user = {
+      id: userData.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      username: userData.username || "usuario_test",
+      wikimedia_id: userData.wikimedia_id || "test_id",
+      email: userData.email || null,
+      avatar_url: userData.avatar_url || null,
+      created_at: userData.created_at || new Date().toISOString(),
+      last_login: new Date().toISOString(),
+    }
+
+    setUser(user)
+    saveUserToLocalStorage(user)
+    setDebugInfo((prev: any) => ({ ...prev, manualUser: user }))
+
+    // Sincronizar con el servidor
+    syncUserWithServer(user)
+  }
+
+  // Función para sincronizar usuario con el servidor
+  const syncUserWithServer = async (userData: User) => {
+    try {
+      const response = await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user: userData }),
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        console.log("Usuario sincronizado con el servidor correctamente")
+      } else {
+        console.error("Error al sincronizar usuario con el servidor:", response.status)
+      }
+    } catch (error) {
+      console.error("Error al sincronizar usuario con el servidor:", error)
+    }
+  }
+
   // Modificar la función checkSession para incluir un timeout y mejor manejo de errores
   const checkSession = async () => {
     try {
       setLoading(true)
-      console.log("Verificando sesión...")
+      console.log("Verificando sesión... (intento " + (retryCount + 1) + ")")
+
+      // Obtener usuario de localStorage primero
+      const localUser = getUserFromLocalStorage()
 
       // Primero intentar obtener el usuario de la cookie a través del API
       try {
+        // Incluir los datos de localStorage en el header si existen
+        const headers: Record<string, string> = {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        }
+
+        if (localUser) {
+          headers["X-LocalStorage-User"] = JSON.stringify(localUser)
+        }
+
         const response = await fetch("/api/auth/me", {
           method: "GET",
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
+          headers,
+          credentials: "include", // Importante para incluir cookies
         })
+
+        console.log("Respuesta de /api/auth/me:", response.status)
 
         if (response.ok) {
           const userData = await response.json()
@@ -95,19 +152,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
           setDebugInfo((prev: any) => ({ ...prev, userData, source: "api" }))
           return
-        } else if (response.status !== 401) {
+        } else if (response.status === 401) {
+          console.log("No autenticado según la API")
+        } else {
           console.error("Error al verificar sesión:", response.status)
         }
       } catch (apiError) {
         console.error("Error al llamar a la API:", apiError)
       }
 
-      // Si no hay usuario en la API, intentar obtenerlo de localStorage
-      const localUser = getUserFromLocalStorage()
+      // Si no hay usuario en la API pero sí en localStorage, usarlo
       if (localUser) {
         console.log("Usuario obtenido de localStorage:", localUser)
         setUser(localUser)
         setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
+
+        // Intentar sincronizar con el servidor
+        syncUserWithServer(localUser)
         return
       }
 
@@ -115,6 +176,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Usuario no autenticado")
       setUser(null)
       setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
+
+      // Si estamos en los primeros intentos y no hay usuario, intentar de nuevo
+      if (retryCount < 2) {
+        setRetryCount(retryCount + 1)
+        setTimeout(() => {
+          checkSession()
+        }, 1000) // Esperar 1 segundo antes de reintentar
+        return
+      }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
@@ -133,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Función para refrescar los datos del usuario
   const refreshUser = async () => {
+    setRetryCount(0) // Resetear el contador de intentos
     await checkSession()
   }
 
@@ -157,7 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
       // Construir la URL de autorización
-      const clientId = "cd1155b5217d823cec353e1e7b5576a1"
+      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // Reemplazar con tu client ID real
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
       const authUrl =
@@ -212,6 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           accessToken: tokenData.access_token,
         }),
+        credentials: "include", // Importante para incluir cookies
       })
 
       if (!userInfoResponse.ok) {
@@ -244,6 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Llamar al endpoint de logout
       await fetch("/api/auth/logout", {
         method: "POST",
+        credentials: "include", // Importante para incluir cookies
       })
 
       // Limpiar localStorage
@@ -281,6 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getAuthUrl,
     refreshUser,
     debugInfo,
+    manualLogin,
   }
 
   console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
