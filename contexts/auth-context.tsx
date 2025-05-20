@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
   const [isInitialized, setIsInitialized] = useState(false)
-  const [retryCount, setRetryCount] = useState(0)
+  const [lastCheck, setLastCheck] = useState(0)
 
   // Función para verificar si hay un usuario en localStorage (fallback)
   const getUserFromLocalStorage = (): User | null => {
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveUserToLocalStorage(user)
     setDebugInfo((prev: any) => ({ ...prev, manualUser: user }))
 
-    // Sincronizar con el servidor
+    // Sincronizar con el servidor (una sola vez)
     syncUserWithServer(user)
   }
 
@@ -106,7 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (response.ok) {
-        // console.log("Usuario sincronizado con el servidor correctamente")
       } else {
         console.error("Error al sincronizar usuario con el servidor:", response.status)
       }
@@ -115,16 +114,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Modificar la función checkSession para incluir un timeout y mejor manejo de errores
-  const checkSession = async () => {
+  // Modificar la función checkSession para evitar llamadas frecuentes
+  const checkSession = async (force = false) => {
+    // Evitar verificaciones frecuentes (máximo una vez cada 30 segundos)
+    const now = Date.now()
+    if (!force && now - lastCheck < 86400000 && isInitialized) {
+      return
+    }
+
     try {
       setLoading(true)
-      // console.log("Verificando sesión... (intento " + (retryCount + 1) + ")")
+      setLastCheck(now)
 
       // Obtener usuario de localStorage primero
       const localUser = getUserFromLocalStorage()
 
-      // Primero intentar obtener el usuario de la cookie a través del API
+      // Si hay un usuario en localStorage y no estamos forzando la verificación, usarlo directamente
+      if (localUser && !force) {
+        setUser(localUser)
+        setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
+        setLoading(false)
+        setIsInitialized(true)
+        return
+      }
+
+      // Solo si estamos forzando la verificación o no hay usuario en localStorage, llamar a la API
       try {
         // Incluir los datos de localStorage en el header si existen
         const headers: Record<string, string> = {
@@ -143,52 +157,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           credentials: "include", // Importante para incluir cookies
         })
 
-        // console.log("Respuesta de /api/auth/me:", response.status)
-
         if (response.ok) {
           const userData = await response.json()
-          // console.log("Usuario obtenido de la API:", userData)
           setUser(userData)
           saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
           setDebugInfo((prev: any) => ({ ...prev, userData, source: "api" }))
           return
         } else if (response.status === 401) {
-          // console.log("No autenticado según la API")
+
+          // Si la API dice que no estamos autenticados pero tenemos un usuario en localStorage,
+          // intentar sincronizar una vez más
+          if (localUser) {
+            await syncUserWithServer(localUser)
+          } else {
+            // Si no hay usuario en localStorage ni en la API, el usuario no está autenticado
+            setUser(null)
+          }
         } else {
           console.error("Error al verificar sesión:", response.status)
         }
       } catch (apiError) {
         console.error("Error al llamar a la API:", apiError)
+
+        // En caso de error, usar el usuario de localStorage si existe
+        if (localUser) {
+          setUser(localUser)
+          setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage (fallback)" }))
+          return
+        }
       }
 
-      // Si no hay usuario en la API pero sí en localStorage, usarlo
-      if (localUser) {
-        // console.log("Usuario obtenido de localStorage:", localUser)
-        setUser(localUser)
-        setDebugInfo((prev: any) => ({ ...prev, userData: localUser, source: "localStorage" }))
-
-        // Intentar sincronizar con el servidor
-        syncUserWithServer(localUser)
-        return
-      }
-
-      // Si no hay usuario ni en la API ni en localStorage, el usuario no está autenticado
-      // console.log("Usuario no autenticado")
-      setUser(null)
-      setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
-
-      // Si estamos en los primeros intentos y no hay usuario, intentar de nuevo
-      if (retryCount < 2) {
-        setRetryCount(retryCount + 1)
-        setTimeout(() => {
-          checkSession()
-        }, 1000) // Esperar 1 segundo antes de reintentar
-        return
+      // Si llegamos aquí y no hemos retornado, no hay usuario autenticado
+      if (!user) {
+        setUser(null)
+        setDebugInfo((prev: any) => ({ ...prev, userData: null, source: "none" }))
       }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
       setError("Error al verificar la sesión")
-      setUser(null)
+
+      // En caso de error general, mantener el usuario actual
+      // No cambiar a null para evitar cerrar sesión por errores temporales
     } finally {
       setLoading(false)
       setIsInitialized(true)
@@ -197,14 +206,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
-    // console.log("AuthProvider: Inicializando...")
     checkSession()
   }, [])
 
   // Función para refrescar los datos del usuario
   const refreshUser = async () => {
-    setRetryCount(0) // Resetear el contador de intentos
-    await checkSession()
+    await checkSession(true) // Forzar verificación
   }
 
   // Función para obtener la URL de autenticación
@@ -271,7 +278,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json()
-      // console.log("Token obtenido correctamente")
       setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
@@ -292,7 +298,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = await userInfoResponse.json()
-      // console.log("Datos de usuario obtenidos después de login:", userData)
       setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
       saveUserToLocalStorage(userData) // Guardar en localStorage como fallback
@@ -357,7 +362,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     manualLogin,
   }
 
-  // console.log("AuthProvider: Estado actual:", { user, loading, error, isInitialized })
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
