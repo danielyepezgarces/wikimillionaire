@@ -23,6 +23,7 @@ type AuthContextType = {
   logout: () => Promise<void>
   getAuthUrl: () => Promise<string>
   refreshUser: () => Promise<void>
+  debugInfo: any
 }
 
 // Crear el contexto
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>({})
 
   // Función para verificar la sesión
   const checkSession = async () => {
@@ -54,12 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (sessionError) {
         console.error("Error al obtener la sesión:", sessionError)
+        setDebugInfo((prev: any) => ({ ...prev, sessionError }))
         setUser(null)
         setLoading(false)
         return
       }
 
       console.log("Sesión obtenida:", sessionData?.session ? "Activa" : "No hay sesión")
+      setDebugInfo((prev: any) => ({ ...prev, sessionData }))
 
       if (!sessionData?.session) {
         // No hay sesión activa
@@ -71,102 +75,156 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const authUserId = sessionData.session.user.id
       console.log("ID de usuario autenticado:", authUserId)
 
-      // Obtener los datos del usuario por auth_id
-      const { data: userData, error: userError } = await supabase
+      // Obtener el email de autenticación
+      const authEmail = sessionData.session.user.email
+      console.log("Email de autenticación:", authEmail)
+
+      // Obtener el wikimedia_id de los metadatos
+      const wikimediaId = sessionData.session.user.user_metadata?.wikimedia_id
+      console.log("Wikimedia ID de los metadatos:", wikimediaId)
+
+      // Obtener todos los usuarios para depuración
+      const { data: allUsers, error: allUsersError } = await supabase.from("users").select("*")
+      console.log("Todos los usuarios:", allUsers)
+      setDebugInfo((prev: any) => ({ ...prev, allUsers }))
+
+      if (allUsersError) {
+        console.error("Error al obtener todos los usuarios:", allUsersError)
+        setDebugInfo((prev: any) => ({ ...prev, allUsersError }))
+      }
+
+      // Estrategia 1: Buscar por auth_id
+      const { data: userByAuthId, error: authIdError } = await supabase
         .from("users")
         .select("*")
         .eq("auth_id", authUserId)
         .single()
 
-      if (userError) {
-        console.log("No se encontró usuario por auth_id, buscando por wikimedia_id")
+      if (!authIdError && userByAuthId) {
+        console.log("Usuario encontrado por auth_id:", userByAuthId)
+        setDebugInfo((prev: any) => ({ ...prev, userByAuthId }))
+        setUser(userByAuthId as User)
+        setLoading(false)
+        return
+      }
 
-        // Intentar buscar por wikimedia_id en los metadatos
-        const wikimediaId = sessionData.session.user.user_metadata?.wikimedia_id
-        if (wikimediaId) {
-          const { data: userByWikimediaId, error: wikimediaError } = await supabase
-            .from("users")
-            .select("*")
-            .eq("wikimedia_id", wikimediaId)
-            .single()
+      console.log("No se encontró usuario por auth_id, buscando por wikimedia_id")
+      setDebugInfo((prev: any) => ({ ...prev, authIdError }))
 
-          if (!wikimediaError && userByWikimediaId) {
-            console.log("Usuario encontrado por wikimedia_id:", userByWikimediaId)
-
-            // Actualizar el auth_id si no está establecido
-            if (!userByWikimediaId.auth_id) {
-              const { error: updateError } = await supabase
-                .from("users")
-                .update({ auth_id: authUserId })
-                .eq("id", userByWikimediaId.id)
-
-              if (updateError) {
-                console.error("Error al actualizar auth_id:", updateError)
-              }
-            }
-
-            setUser(userByWikimediaId as User)
-            setLoading(false)
-            return
-          }
-        }
-
-        // Si no se encuentra por wikimedia_id, intentar crear un usuario básico
-        console.log("No se pudo encontrar el usuario en la base de datos, creando uno básico")
-
-        // Obtener el email real de los metadatos si está disponible
-        const realEmail = sessionData.session.user.user_metadata?.real_email || null
-        const username = sessionData.session.user.user_metadata?.username || "Usuario"
-
-        console.log("Creando usuario básico con:", {
-          username,
-          wikimediaId,
-          email: realEmail,
-          authId: authUserId,
-        })
-
-        const { data: newUser, error: insertError } = await supabase
+      // Estrategia 2: Buscar por wikimedia_id
+      if (wikimediaId) {
+        const { data: userByWikimediaId, error: wikimediaError } = await supabase
           .from("users")
-          .insert({
-            username: username,
-            wikimedia_id: wikimediaId || null,
-            email: realEmail,
-            avatar_url: realEmail ? getGravatarUrl(realEmail) : null,
-            last_login: new Date().toISOString(),
-            auth_id: authUserId,
-          })
-          .select()
+          .select("*")
+          .eq("wikimedia_id", wikimediaId)
           .single()
 
-        if (insertError) {
-          console.error("Error al crear usuario básico:", insertError)
-          setUser(null)
-        } else {
-          console.log("Usuario básico creado:", newUser)
-          setUser(newUser as User)
-        }
-      } else if (userData) {
-        console.log("Usuario encontrado por auth_id:", userData)
+        if (!wikimediaError && userByWikimediaId) {
+          console.log("Usuario encontrado por wikimedia_id:", userByWikimediaId)
+          setDebugInfo((prev: any) => ({ ...prev, userByWikimediaId }))
 
-        // Si el usuario tiene email pero no avatar_url, usar Gravatar
-        if (userData.email && !userData.avatar_url) {
-          userData.avatar_url = getGravatarUrl(userData.email)
+          // Actualizar el auth_id si no está establecido
+          if (!userByWikimediaId.auth_id) {
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({ auth_id: authUserId })
+              .eq("id", userByWikimediaId.id)
 
-          // Actualizar el avatar_url en la base de datos
-          const { error: updateError } = await supabase
-            .from("users")
-            .update({ avatar_url: userData.avatar_url })
-            .eq("id", userData.id)
-
-          if (updateError) {
-            console.error("Error al actualizar avatar_url:", updateError)
+            if (updateError) {
+              console.error("Error al actualizar auth_id:", updateError)
+              setDebugInfo((prev: any) => ({ ...prev, updateError }))
+            } else {
+              console.log("auth_id actualizado correctamente")
+              userByWikimediaId.auth_id = authUserId
+            }
           }
+
+          setUser(userByWikimediaId as User)
+          setLoading(false)
+          return
         }
 
-        setUser(userData as User)
+        console.log("No se encontró usuario por wikimedia_id:", wikimediaError)
+        setDebugInfo((prev: any) => ({ ...prev, wikimediaError }))
+      }
+
+      // Estrategia 3: Buscar por email
+      const realEmail = sessionData.session.user.user_metadata?.real_email
+      console.log("Email real de los metadatos:", realEmail)
+
+      if (realEmail) {
+        const { data: userByEmail, error: emailError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", realEmail)
+          .single()
+
+        if (!emailError && userByEmail) {
+          console.log("Usuario encontrado por email real:", userByEmail)
+          setDebugInfo((prev: any) => ({ ...prev, userByEmail }))
+
+          // Actualizar el auth_id si no está establecido
+          if (!userByEmail.auth_id) {
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({ auth_id: authUserId })
+              .eq("id", userByEmail.id)
+
+            if (updateError) {
+              console.error("Error al actualizar auth_id:", updateError)
+              setDebugInfo((prev: any) => ({ ...prev, updateError }))
+            } else {
+              console.log("auth_id actualizado correctamente")
+              userByEmail.auth_id = authUserId
+            }
+          }
+
+          setUser(userByEmail as User)
+          setLoading(false)
+          return
+        }
+
+        console.log("No se encontró usuario por email real:", emailError)
+        setDebugInfo((prev: any) => ({ ...prev, emailError }))
+      }
+
+      // Estrategia 4: Crear un nuevo usuario si no se encuentra por ningún método
+      console.log("No se encontró usuario por ningún método, creando uno nuevo")
+
+      // Obtener información de los metadatos
+      const username = sessionData.session.user.user_metadata?.username || "Usuario"
+      console.log("Creando usuario con:", {
+        username,
+        wikimediaId,
+        email: realEmail,
+        authId: authUserId,
+      })
+
+      const { data: newUser, error: insertError } = await supabase
+        .from("users")
+        .insert({
+          username: username,
+          wikimedia_id: wikimediaId,
+          email: realEmail,
+          avatar_url: realEmail ? getGravatarUrl(realEmail) : null,
+          last_login: new Date().toISOString(),
+          auth_id: authUserId,
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error("Error al crear usuario:", insertError)
+        setDebugInfo((prev: any) => ({ ...prev, insertError }))
+        setUser(null)
+      } else {
+        console.log("Usuario creado:", newUser)
+        setDebugInfo((prev: any) => ({ ...prev, newUser }))
+        setUser(newUser as User)
       }
     } catch (err) {
       console.error("Error al verificar la sesión:", err)
+      setDebugInfo((prev: any) => ({ ...prev, sessionCheckError: err }))
       setError("Error al verificar la sesión")
       // Si hay un error con la sesión, limpiar el estado
       setUser(null)
@@ -187,6 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Evento de autenticación:", event)
+      setDebugInfo((prev: any) => ({ ...prev, authEvent: event, session }))
 
       if (event === "SIGNED_IN") {
         console.log("Usuario ha iniciado sesión, actualizando estado")
@@ -250,6 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const tokenData = await tokenResponse.json()
       console.log("Token obtenido correctamente")
+      setDebugInfo((prev: any) => ({ ...prev, tokenData }))
 
       // 2. Obtener información del usuario
       const userInfoResponse = await fetch("/api/auth/user", {
@@ -269,12 +329,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const userData = await userInfoResponse.json()
       console.log("Datos de usuario obtenidos después de login:", userData)
+      setDebugInfo((prev: any) => ({ ...prev, userData }))
       setUser(userData as User)
 
       // Refrescar la página para asegurar que todo se actualice correctamente
       window.location.href = "/"
     } catch (err) {
       console.error("Error al iniciar sesión:", err)
+      setDebugInfo((prev: any) => ({ ...prev, loginError: err }))
       setError("Error al iniciar sesión")
     } finally {
       setLoading(false)
@@ -297,6 +359,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.location.href = "/"
     } catch (err) {
       console.error("Error al cerrar sesión:", err)
+      setDebugInfo((prev: any) => ({ ...prev, logoutError: err }))
       setError("Error al cerrar sesión")
     } finally {
       setLoading(false)
@@ -312,6 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     getAuthUrl,
     refreshUser,
+    debugInfo,
   }
 
   console.log("AuthProvider: Estado actual:", { user, loading, error })

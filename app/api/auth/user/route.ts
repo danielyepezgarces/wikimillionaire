@@ -166,14 +166,15 @@ export async function POST(request: NextRequest) {
 
       const supabase = createServerSupabaseClient()
 
-      // Crear un email único basado en el ID de Wikidata para Supabase Auth
-      // Esto es necesario porque Supabase Auth requiere un email
-      const authEmail = `${userInfo.sub}@wikidata.org`
+      // IMPORTANTE: Usar siempre el mismo formato de email para la autenticación
+      // Usar wikimedia_id@wikimedia.org para mantener consistencia
+      const authEmail = `${userInfo.sub}@wikimedia.org`
       const password = process.env.SUPABASE_USER_PASSWORD || "password123"
 
       // Usar el email real del usuario si está disponible
       const userEmail = userInfo.email || null
       console.log("Email del usuario:", userEmail || "No disponible")
+      console.log("Email de autenticación:", authEmail)
 
       // 1. Primero, intentar iniciar sesión si el usuario ya existe
       let authUser
@@ -236,6 +237,8 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase.auth.updateUser({
             data: {
               real_email: userEmail,
+              wikimedia_id: userInfo.sub,
+              username: userInfo.username,
             },
           })
 
