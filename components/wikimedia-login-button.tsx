@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -24,9 +24,17 @@ interface WikimediaLoginButtonProps {
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, loading, refreshUser } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Asegurarse de que el componente está montado para evitar problemas de hidratación
+  useEffect(() => {
+    setMounted(true)
+    // Intentar refrescar el usuario al montar el componente
+    refreshUser()
+  }, [refreshUser])
 
   const handleLogin = async () => {
     try {
@@ -42,18 +50,35 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      await logout()
-      router.refresh()
-      // Recargar la página para asegurar que todo se actualice correctamente
-      window.location.href = "/"
+      // Limpiar cookies de autenticación
+      document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      // Redirigir a la página principal
+      window.location.href = "/api/auth/logout"
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
-    } finally {
       setIsLoggingOut(false)
     }
   }
 
+  // No renderizar nada hasta que el componente esté montado
+  if (!mounted) {
+    return null
+  }
+
+  console.log("WikimediaLoginButton: Estado actual:", { user, loading })
+
+  // Mostrar un indicador de carga mientras se verifica la sesión
+  if (loading) {
+    return (
+      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-purple-700 text-white" disabled>
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+        <span className="sr-only">Cargando...</span>
+      </Button>
+    )
+  }
+
   if (user) {
+    console.log("WikimediaLoginButton: Usuario autenticado:", user)
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -81,7 +106,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
               {user.email ? (
                 <p className="text-xs leading-none text-gray-400">{user.email}</p>
               ) : (
-                <p className="text-xs leading-none text-gray-400">Usuario de Wikimedia</p>
+                <p className="text-xs leading-none text-gray-400">Usuario de Wikidata</p>
               )}
             </div>
           </DropdownMenuLabel>
@@ -118,6 +143,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     )
   }
 
+  console.log("WikimediaLoginButton: Usuario no autenticado")
   return (
     <TooltipProvider>
       <Tooltip>

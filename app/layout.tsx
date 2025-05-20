@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { SessionHandler } from "@/components/session-handler"
+import { AuthDebug } from "@/components/auth-debug"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({
           <AuthProvider>
             <SessionHandler />
             {children}
+            <AuthDebug />
           </AuthProvider>
         </ThemeProvider>
       </body>

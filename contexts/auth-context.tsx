@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (sessionError) {
         console.error("Error al obtener la sesión:", sessionError)
         setUser(null)
+        setLoading(false)
         return
       }
 
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!sessionData?.session) {
         // No hay sesión activa
         setUser(null)
+        setLoading(false)
         return
       }
 
@@ -104,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setUser(userByWikimediaId as User)
+            setLoading(false)
             return
           }
         }
@@ -113,11 +116,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Obtener el email real de los metadatos si está disponible
         const realEmail = sessionData.session.user.user_metadata?.real_email || null
+        const username = sessionData.session.user.user_metadata?.username || "Usuario"
+
+        console.log("Creando usuario básico con:", {
+          username,
+          wikimediaId,
+          email: realEmail,
+          authId: authUserId,
+        })
 
         const { data: newUser, error: insertError } = await supabase
           .from("users")
           .insert({
-            username: sessionData.session.user.user_metadata?.username || "Usuario",
+            username: username,
             wikimedia_id: wikimediaId || null,
             email: realEmail,
             avatar_url: realEmail ? getGravatarUrl(realEmail) : null,
@@ -166,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Inicializar y verificar la sesión al cargar
   useEffect(() => {
+    console.log("AuthProvider: Inicializando...")
     checkSession()
 
     // Configurar un listener para cambios en la sesión
@@ -258,6 +270,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await userInfoResponse.json()
       console.log("Datos de usuario obtenidos después de login:", userData)
       setUser(userData as User)
+
+      // Refrescar la página para asegurar que todo se actualice correctamente
+      window.location.href = "/"
     } catch (err) {
       console.error("Error al iniciar sesión:", err)
       setError("Error al iniciar sesión")
@@ -277,6 +292,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Limpiar cookies de autenticación
       document.cookie = "wikimedia_auth_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+
+      // Recargar la página para asegurar que todo se actualice correctamente
+      window.location.href = "/"
     } catch (err) {
       console.error("Error al cerrar sesión:", err)
       setError("Error al cerrar sesión")
@@ -295,6 +313,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getAuthUrl,
     refreshUser,
   }
+
+  console.log("AuthProvider: Estado actual:", { user, loading, error })
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
