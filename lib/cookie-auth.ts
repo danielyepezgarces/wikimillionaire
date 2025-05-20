@@ -4,7 +4,7 @@ import { getGravatarUrl } from "./gravatar"
 
 // Tipo para el usuario
 export type User = {
-  id: string
+  id: string // UUID de Supabase
   username: string
   wikimedia_id: string
   email: string | null
@@ -16,32 +16,28 @@ export type User = {
 // Nombre de la cookie
 const USER_COOKIE_NAME = "wikimillionaire_user"
 
-// Función para crear un usuario y guardarlo en una cookie
+// Función para crear una cookie de usuario
 export async function createUserCookie(userData: {
+  id: string // UUID de Supabase
   username: string
   wikimedia_id: string
   email?: string | null
 }): Promise<User> {
-  const { username, wikimedia_id, email } = userData
+  const { id, username, wikimedia_id, email } = userData
+  const now = new Date().toISOString()
 
-  // Crear un ID único para el usuario
-  const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-
-  // Crear objeto de usuario
   const user: User = {
     id,
     username,
     wikimedia_id,
     email: email || null,
     avatar_url: email ? getGravatarUrl(email) : null,
-    created_at: new Date().toISOString(),
-    last_login: new Date().toISOString(),
+    created_at: now,
+    last_login: now,
   }
 
-  // Encriptar los datos del usuario
   const encryptedUser = await encrypt(JSON.stringify(user))
 
-  // Establecer la cookie
   const cookieStore = cookies()
   cookieStore.set(USER_COOKIE_NAME, encryptedUser, {
     httpOnly: true,
@@ -64,7 +60,6 @@ export async function getUserFromCookie(): Promise<User | null> {
       return null
     }
 
-    // Desencriptar los datos del usuario
     const decryptedUser = await decrypt(userCookie.value)
     return JSON.parse(decryptedUser)
   } catch (error) {
@@ -73,26 +68,20 @@ export async function getUserFromCookie(): Promise<User | null> {
   }
 }
 
-// Función para actualizar el usuario en la cookie
+// Función para actualizar la cookie del usuario
 export async function updateUserCookie(updates: Partial<User>): Promise<User | null> {
   try {
     const user = await getUserFromCookie()
+    if (!user) return null
 
-    if (!user) {
-      return null
-    }
-
-    // Actualizar los campos
     const updatedUser: User = {
       ...user,
       ...updates,
       last_login: new Date().toISOString(),
     }
 
-    // Encriptar los datos actualizados
     const encryptedUser = await encrypt(JSON.stringify(updatedUser))
 
-    // Actualizar la cookie
     const cookieStore = cookies()
     cookieStore.set(USER_COOKIE_NAME, encryptedUser, {
       httpOnly: true,
