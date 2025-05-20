@@ -31,8 +31,8 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      // Redirigir al endpoint de inicio de sesión del servidor con la ruta actual como returnTo
-      window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(pathname)}`
+      // Redirigir al endpoint de redirección
+      window.location.href = `/api/auth/wikimedia?returnTo=${encodeURIComponent(pathname)}`
     } catch (error) {
       console.error("Error al iniciar sesión:", error)
       setIsLoggingIn(false)
