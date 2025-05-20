@@ -81,6 +81,113 @@ export type Translations = {
     logout: string
     comingSoon: string
   }
+  profile: {
+    title: string
+    welcome: string
+    stats: {
+      title: string
+      gamesPlayed: string
+      highScore: string
+      totalScore: string
+      averageScore: string
+      ranking: string
+      lastGame: string
+      millionaireProgress: string
+    }
+    achievements: {
+      title: string
+      locked: string
+      unlocked: string
+      progress: string
+      types: {
+        score: {
+          title: string
+          description: string
+        }
+        games: {
+          title: string
+          description: string
+        }
+        ranking: {
+          title: string
+          description: string
+        }
+        streak: {
+          title: string
+          description: string
+        }
+      }
+      list: {
+        firstGame: {
+          title: string
+          description: string
+        }
+        tenGames: {
+          title: string
+          description: string
+        }
+        fiftyGames: {
+          title: string
+          description: string
+        }
+        hundredGames: {
+          title: string
+          description: string
+        }
+        score1k: {
+          title: string
+          description: string
+        }
+        score10k: {
+          title: string
+          description: string
+        }
+        score100k: {
+          title: string
+          description: string
+        }
+        score1m: {
+          title: string
+          description: string
+        }
+        topDaily: {
+          title: string
+          description: string
+        }
+        topWeekly: {
+          title: string
+          description: string
+        }
+        topMonthly: {
+          title: string
+          description: string
+        }
+        topAllTime: {
+          title: string
+          description: string
+        }
+      }
+    }
+    history: {
+      title: string
+      date: string
+      score: string
+      level: string
+      noData: string
+    }
+    settings: {
+      title: string
+      language: string
+      sound: string
+      on: string
+      off: string
+      theme: string
+      light: string
+      dark: string
+      save: string
+      saved: string
+    }
+  }
 }
 
 // Traducciones en español
@@ -163,6 +270,113 @@ export const es: Translations = {
     login: "Iniciar sesión con Wikidata",
     logout: "Cerrar sesión",
     comingSoon: "Próximamente",
+  },
+  profile: {
+    title: "Perfil de Usuario",
+    welcome: "Bienvenido, {username}",
+    stats: {
+      title: "Estadísticas",
+      gamesPlayed: "Partidas jugadas",
+      highScore: "Puntuación máxima",
+      totalScore: "Puntuación total",
+      averageScore: "Puntuación media",
+      ranking: "Posición en el ranking",
+      lastGame: "Última partida",
+      millionaireProgress: "Progreso hacia el millón",
+    },
+    achievements: {
+      title: "Logros",
+      locked: "Bloqueado",
+      unlocked: "Desbloqueado",
+      progress: "Progreso: {current}/{total}",
+      types: {
+        score: {
+          title: "Puntuación",
+          description: "Logros basados en tu puntuación",
+        },
+        games: {
+          title: "Partidas",
+          description: "Logros basados en el número de partidas jugadas",
+        },
+        ranking: {
+          title: "Ranking",
+          description: "Logros basados en tu posición en el ranking",
+        },
+        streak: {
+          title: "Racha",
+          description: "Logros basados en tu racha de juego",
+        },
+      },
+      list: {
+        firstGame: {
+          title: "Primera Partida",
+          description: "Juega tu primera partida",
+        },
+        tenGames: {
+          title: "Jugador Dedicado",
+          description: "Juega 10 partidas",
+        },
+        fiftyGames: {
+          title: "Jugador Experimentado",
+          description: "Juega 50 partidas",
+        },
+        hundredGames: {
+          title: "Maestro del Juego",
+          description: "Juega 100 partidas",
+        },
+        score1k: {
+          title: "Primer Milestone",
+          description: "Alcanza 1,000 puntos en una partida",
+        },
+        score10k: {
+          title: "Experto en Conocimiento",
+          description: "Alcanza 10,000 puntos en una partida",
+        },
+        score100k: {
+          title: "Sabio de Wikidata",
+          description: "Alcanza 100,000 puntos en una partida",
+        },
+        score1m: {
+          title: "Millonario",
+          description: "Alcanza 1,000,000 puntos en una partida",
+        },
+        topDaily: {
+          title: "Estrella del Día",
+          description: "Alcanza el top 10 en el ranking diario",
+        },
+        topWeekly: {
+          title: "Estrella de la Semana",
+          description: "Alcanza el top 10 en el ranking semanal",
+        },
+        topMonthly: {
+          title: "Estrella del Mes",
+          description: "Alcanza el top 10 en el ranking mensual",
+        },
+        topAllTime: {
+          title: "Leyenda",
+          description: "Alcanza el top 10 en el ranking de todos los tiempos",
+        },
+      },
+    },
+    history: {
+      title: "Historial de Partidas",
+      date: "Fecha",
+      score: "Puntuación",
+      level: "Nivel",
+      noData: "No hay partidas registradas",
+    },
+    settings: {
+      title: "Configuración",
+      language: "Idioma",
+      sound: "Sonido",
+      on: "Activado",
+      off: "Desactivado",
+      theme: "Tema",
+      light: "Claro",
+      dark: "Oscuro",
+      save: "Guardar",
+      saved: "¡Guardado!",
+    },
   },
 }
 
@@ -247,6 +461,113 @@ export const en: Translations = {
     logout: "Logout",
     comingSoon: "Coming Soon",
   },
+  profile: {
+    title: "User Profile",
+    welcome: "Welcome, {username}",
+    stats: {
+      title: "Statistics",
+      gamesPlayed: "Games played",
+      highScore: "High score",
+      totalScore: "Total score",
+      averageScore: "Average score",
+      ranking: "Ranking position",
+      lastGame: "Last game",
+      millionaireProgress: "Progress to million",
+    },
+    achievements: {
+      title: "Achievements",
+      locked: "Locked",
+      unlocked: "Unlocked",
+      progress: "Progress: {current}/{total}",
+      types: {
+        score: {
+          title: "Score",
+          description: "Achievements based on your score",
+        },
+        games: {
+          title: "Games",
+          description: "Achievements based on number of games played",
+        },
+        ranking: {
+          title: "Ranking",
+          description: "Achievements based on your ranking position",
+        },
+        streak: {
+          title: "Streak",
+          description: "Achievements based on your playing streak",
+        },
+      },
+      list: {
+        firstGame: {
+          title: "First Game",
+          description: "Play your first game",
+        },
+        tenGames: {
+          title: "Dedicated Player",
+          description: "Play 10 games",
+        },
+        fiftyGames: {
+          title: "Experienced Player",
+          description: "Play 50 games",
+        },
+        hundredGames: {
+          title: "Game Master",
+          description: "Play 100 games",
+        },
+        score1k: {
+          title: "First Milestone",
+          description: "Reach 1,000 points in a game",
+        },
+        score10k: {
+          title: "Knowledge Expert",
+          description: "Reach 10,000 points in a game",
+        },
+        score100k: {
+          title: "Wikidata Sage",
+          description: "Reach 100,000 points in a game",
+        },
+        score1m: {
+          title: "Millionaire",
+          description: "Reach 1,000,000 points in a game",
+        },
+        topDaily: {
+          title: "Daily Star",
+          description: "Reach top 10 in daily ranking",
+        },
+        topWeekly: {
+          title: "Weekly Star",
+          description: "Reach top 10 in weekly ranking",
+        },
+        topMonthly: {
+          title: "Monthly Star",
+          description: "Reach top 10 in monthly ranking",
+        },
+        topAllTime: {
+          title: "Legend",
+          description: "Reach top 10 in all-time ranking",
+        },
+      },
+    },
+    history: {
+      title: "Game History",
+      date: "Date",
+      score: "Score",
+      level: "Level",
+      noData: "No games recorded",
+    },
+    settings: {
+      title: "Settings",
+      language: "Language",
+      sound: "Sound",
+      on: "On",
+      off: "Off",
+      theme: "Theme",
+      light: "Light",
+      dark: "Dark",
+      save: "Save",
+      saved: "Saved!",
+    },
+  },
 }
 
 // Traducciones en francés
@@ -329,6 +650,113 @@ export const fr: Translations = {
     login: "Se connecter avec Wikidata",
     logout: "Se déconnecter",
     comingSoon: "Bientôt Disponible",
+  },
+  profile: {
+    title: "Profil Utilisateur",
+    welcome: "Bienvenue, {username}",
+    stats: {
+      title: "Statistiques",
+      gamesPlayed: "Parties jouées",
+      highScore: "Meilleur score",
+      totalScore: "Score total",
+      averageScore: "Score moyen",
+      ranking: "Position dans le classement",
+      lastGame: "Dernière partie",
+      millionaireProgress: "Progression vers le million",
+    },
+    achievements: {
+      title: "Réalisations",
+      locked: "Verrouillé",
+      unlocked: "Déverrouillé",
+      progress: "Progression : {current}/{total}",
+      types: {
+        score: {
+          title: "Score",
+          description: "Réalisations basées sur votre score",
+        },
+        games: {
+          title: "Parties",
+          description: "Réalisations basées sur le nombre de parties jouées",
+        },
+        ranking: {
+          title: "Classement",
+          description: "Réalisations basées sur votre position dans le classement",
+        },
+        streak: {
+          title: "Série",
+          description: "Réalisations basées sur votre série de jeu",
+        },
+      },
+      list: {
+        firstGame: {
+          title: "Première Partie",
+          description: "Jouez votre première partie",
+        },
+        tenGames: {
+          title: "Joueur Dévoué",
+          description: "Jouez 10 parties",
+        },
+        fiftyGames: {
+          title: "Joueur Expérimenté",
+          description: "Jouez 50 parties",
+        },
+        hundredGames: {
+          title: "Maître du Jeu",
+          description: "Jouez 100 parties",
+        },
+        score1k: {
+          title: "Premier Jalon",
+          description: "Atteignez 1 000 points dans une partie",
+        },
+        score10k: {
+          title: "Expert en Connaissances",
+          description: "Atteignez 10 000 points dans une partie",
+        },
+        score100k: {
+          title: "Sage de Wikidata",
+          description: "Atteignez 100 000 points dans une partie",
+        },
+        score1m: {
+          title: "Millionnaire",
+          description: "Atteignez 1 000 000 points dans une partie",
+        },
+        topDaily: {
+          title: "Étoile du Jour",
+          description: "Atteignez le top 10 du classement quotidien",
+        },
+        topWeekly: {
+          title: "Étoile de la Semaine",
+          description: "Atteignez le top 10 du classement hebdomadaire",
+        },
+        topMonthly: {
+          title: "Étoile du Mois",
+          description: "Atteignez le top 10 du classement mensuel",
+        },
+        topAllTime: {
+          title: "Légende",
+          description: "Atteignez le top 10 du classement de tous les temps",
+        },
+      },
+    },
+    history: {
+      title: "Historique des Parties",
+      date: "Date",
+      score: "Score",
+      level: "Niveau",
+      noData: "Aucune partie enregistrée",
+    },
+    settings: {
+      title: "Paramètres",
+      language: "Langue",
+      sound: "Son",
+      on: "Activé",
+      off: "Désactivé",
+      theme: "Thème",
+      light: "Clair",
+      dark: "Sombre",
+      save: "Enregistrer",
+      saved: "Enregistré !",
+    },
   },
 }
 
@@ -413,6 +841,113 @@ export const de: Translations = {
     logout: "Abmelden",
     comingSoon: "Demnächst Verfügbar",
   },
+  profile: {
+    title: "Benutzerprofil",
+    welcome: "Willkommen, {username}",
+    stats: {
+      title: "Statistiken",
+      gamesPlayed: "Gespielte Spiele",
+      highScore: "Höchstpunktzahl",
+      totalScore: "Gesamtpunktzahl",
+      averageScore: "Durchschnittliche Punktzahl",
+      ranking: "Ranglistenposition",
+      lastGame: "Letztes Spiel",
+      millionaireProgress: "Fortschritt zur Million",
+    },
+    achievements: {
+      title: "Erfolge",
+      locked: "Gesperrt",
+      unlocked: "Freigeschaltet",
+      progress: "Fortschritt: {current}/{total}",
+      types: {
+        score: {
+          title: "Punktzahl",
+          description: "Erfolge basierend auf deiner Punktzahl",
+        },
+        games: {
+          title: "Spiele",
+          description: "Erfolge basierend auf der Anzahl gespielter Spiele",
+        },
+        ranking: {
+          title: "Rangliste",
+          description: "Erfolge basierend auf deiner Position in der Rangliste",
+        },
+        streak: {
+          title: "Serie",
+          description: "Erfolge basierend auf deiner Spielserie",
+        },
+      },
+      list: {
+        firstGame: {
+          title: "Erstes Spiel",
+          description: "Spiele dein erstes Spiel",
+        },
+        tenGames: {
+          title: "Engagierter Spieler",
+          description: "Spiele 10 Spiele",
+        },
+        fiftyGames: {
+          title: "Erfahrener Spieler",
+          description: "Spiele 50 Spiele",
+        },
+        hundredGames: {
+          title: "Spielmeister",
+          description: "Spiele 100 Spiele",
+        },
+        score1k: {
+          title: "Erster Meilenstein",
+          description: "Erreiche 1.000 Punkte in einem Spiel",
+        },
+        score10k: {
+          title: "Wissensexperte",
+          description: "Erreiche 10.000 Punkte in einem Spiel",
+        },
+        score100k: {
+          title: "Wikidata-Weiser",
+          description: "Erreiche 100.000 Punkte in einem Spiel",
+        },
+        score1m: {
+          title: "Millionär",
+          description: "Erreiche 1.000.000 Punkte in einem Spiel",
+        },
+        topDaily: {
+          title: "Tagesstern",
+          description: "Erreiche die Top 10 in der täglichen Rangliste",
+        },
+        topWeekly: {
+          title: "Wochenstern",
+          description: "Erreiche die Top 10 in der wöchentlichen Rangliste",
+        },
+        topMonthly: {
+          title: "Monatsstern",
+          description: "Erreiche die Top 10 in der monatlichen Rangliste",
+        },
+        topAllTime: {
+          title: "Legende",
+          description: "Erreiche die Top 10 in der Gesamtrangliste",
+        },
+      },
+    },
+    history: {
+      title: "Spielverlauf",
+      date: "Datum",
+      score: "Punktzahl",
+      level: "Stufe",
+      noData: "Keine Spiele aufgezeichnet",
+    },
+    settings: {
+      title: "Einstellungen",
+      language: "Sprache",
+      sound: "Ton",
+      on: "Ein",
+      off: "Aus",
+      theme: "Thema",
+      light: "Hell",
+      dark: "Dunkel",
+      save: "Speichern",
+      saved: "Gespeichert!",
+    },
+  },
 }
 
 // Traducciones en portugués
@@ -495,6 +1030,113 @@ export const pt: Translations = {
     login: "Entrar com Wikidata",
     logout: "Sair",
     comingSoon: "Em Breve",
+  },
+  profile: {
+    title: "Perfil do Usuário",
+    welcome: "Bem-vindo, {username}",
+    stats: {
+      title: "Estatísticas",
+      gamesPlayed: "Jogos jogados",
+      highScore: "Pontuação máxima",
+      totalScore: "Pontuação total",
+      averageScore: "Pontuação média",
+      ranking: "Posição no ranking",
+      lastGame: "Último jogo",
+      millionaireProgress: "Progresso para o milhão",
+    },
+    achievements: {
+      title: "Conquistas",
+      locked: "Bloqueado",
+      unlocked: "Desbloqueado",
+      progress: "Progresso: {current}/{total}",
+      types: {
+        score: {
+          title: "Pontuação",
+          description: "Conquistas baseadas na sua pontuação",
+        },
+        games: {
+          title: "Jogos",
+          description: "Conquistas baseadas no número de jogos jogados",
+        },
+        ranking: {
+          title: "Ranking",
+          description: "Conquistas baseadas na sua posição no ranking",
+        },
+        streak: {
+          title: "Sequência",
+          description: "Conquistas baseadas na sua sequência de jogo",
+        },
+      },
+      list: {
+        firstGame: {
+          title: "Primeiro Jogo",
+          description: "Jogue seu primeiro jogo",
+        },
+        tenGames: {
+          title: "Jogador Dedicado",
+          description: "Jogue 10 jogos",
+        },
+        fiftyGames: {
+          title: "Jogador Experiente",
+          description: "Jogue 50 jogos",
+        },
+        hundredGames: {
+          title: "Mestre do Jogo",
+          description: "Jogue 100 jogos",
+        },
+        score1k: {
+          title: "Primeiro Marco",
+          description: "Alcance 1.000 pontos em um jogo",
+        },
+        score10k: {
+          title: "Especialista em Conhecimento",
+          description: "Alcance 10.000 pontos em um jogo",
+        },
+        score100k: {
+          title: "Sábio do Wikidata",
+          description: "Alcance 100.000 pontos em um jogo",
+        },
+        score1m: {
+          title: "Milionário",
+          description: "Alcance 1.000.000 pontos em um jogo",
+        },
+        topDaily: {
+          title: "Estrela do Dia",
+          description: "Alcance o top 10 no ranking diário",
+        },
+        topWeekly: {
+          title: "Estrela da Semana",
+          description: "Alcance o top 10 no ranking semanal",
+        },
+        topMonthly: {
+          title: "Estrela do Mês",
+          description: "Alcance o top 10 no ranking mensal",
+        },
+        topAllTime: {
+          title: "Lenda",
+          description: "Alcance o top 10 no ranking de todos os tempos",
+        },
+      },
+    },
+    history: {
+      title: "Histórico de Jogos",
+      date: "Data",
+      score: "Pontuação",
+      level: "Nível",
+      noData: "Nenhum jogo registrado",
+    },
+    settings: {
+      title: "Configurações",
+      language: "Idioma",
+      sound: "Som",
+      on: "Ligado",
+      off: "Desligado",
+      theme: "Tema",
+      light: "Claro",
+      dark: "Escuro",
+      save: "Salvar",
+      saved: "Salvo!",
+    },
   },
 }
 
