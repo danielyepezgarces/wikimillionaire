@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Función para obtener la URL de autenticación
-  const getAuthUrl = async (): Promise<string> => {
+    const getAuthUrl = async (): Promise<string> => {
     try {
       // Generar un nuevo estado y codeVerifier
       const state = crypto.randomUUID()
