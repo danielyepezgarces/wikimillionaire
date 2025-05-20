@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Si no hay ninguna forma de autenticación, redirigir a la página de inicio
-  // console.log("Middleware: Usuario no autenticado, redirigiendo a /")
+  console.log("Middleware: Usuario no autenticado, redirigiendo a /")
   return NextResponse.redirect(new URL("/", request.url))
 }
 
