@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
       // Construir la URL de autorización
-      const clientId = "your-client-id" // Reemplazar con tu client ID real
+      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // Reemplazar con tu client ID real
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
       const authUrl =
