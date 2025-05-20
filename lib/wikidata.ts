@@ -1,795 +1,538 @@
-// Tipos para las preguntas y respuestas
-export type WikidataQuestion = {
-  question: string
-  options: string[]
-  correctAnswer: string
-  id?: string // Identificador opcional para evitar repeticiones
-}
+// Definición de tipos para las traducciones
+export type Locale = "es" | "en" | "fr" | "de" | "pt"
 
-// Función principal para obtener una pregunta aleatoria de Wikidata
-export async function getRandomQuestion(level: number): Promise<WikidataQuestion> {
-  // Determinar la dificultad basada en el nivel
-  const difficulty = level < 5 ? "easy" : level < 10 ? "medium" : "hard"
-
-  try {
-    // Intentar obtener una pregunta real de Wikidata
-    const question = await generateWikidataQuestion(difficulty)
-    return question
-  } catch (error) {
-    console.error("Error fetching question from Wikidata:", error)
-    // En caso de error, usar preguntas de respaldo
-    return getBackupQuestion(difficulty)
+export type Translations = {
+  general: {
+    appName: string
+    play: string
+    leaderboard: string
+    about: string
+    privacy: string
+    terms: string
+    loading: string
+    error: string
+    credits: string
   }
-}
-
-// Función para realizar consultas a Wikidata con reintentos y mejor manejo de errores
-async function fetchFromWikidata(sparqlQuery: string, retries = 2) {
-  const endpoint = "https://query.wikidata.org/sparql"
-  const url = `${endpoint}?query=${encodeURIComponent(sparqlQuery)}&format=json`
-
-  let lastError: Error | null = null
-
-  // Implementar reintentos
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      // Añadir un pequeño retraso entre reintentos para no sobrecargar el servidor
-      if (attempt > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
+  home: {
+    tagline: string
+    description: string
+    features: {
+      wikidata: {
+        title: string
+        description: string
       }
-
-      const response = await fetch(url, {
-        headers: {
-          Accept: "application/sparql-results+json",
-          "User-Agent": "WikiMillionaire/1.0 (educational game)",
-        },
-        // Añadir un timeout para evitar esperas infinitas
-        signal: AbortSignal.timeout(10000), // 10 segundos de timeout
-      })
-
-      if (!response.ok) {
-        throw new Error(`Wikidata API error: ${response.status}`)
+      dailyContest: {
+        title: string
+        description: string
       }
-
-      return await response.json()
-    } catch (error) {
-      console.error(`Attempt ${attempt + 1}/${retries + 1} failed:`, error)
-      lastError = error instanceof Error ? error : new Error(String(error))
-
-      // Si es el último intento, lanzar el error
-      if (attempt === retries) {
-        throw lastError
+      leaderboard: {
+        title: string
+        description: string
       }
     }
   }
-
-  // Este código no debería ejecutarse nunca, pero TypeScript lo necesita
-  throw lastError || new Error("Unknown error in fetchFromWikidata")
-}
-
-// Función para generar una pregunta basada en datos de Wikidata
-async function generateWikidataQuestion(difficulty: string): Promise<WikidataQuestion> {
-  // Seleccionar un tipo de pregunta aleatoriamente según la dificultad
-  const questionTypes = getQuestionTypesByDifficulty(difficulty)
-  const randomType = questionTypes[Math.floor(Math.random() * questionTypes.length)]
-
-  // Intentar generar la pregunta según el tipo seleccionado
-  try {
-    switch (randomType) {
-      case "capital":
-        return await generateCapitalQuestion()
-      case "birthdate":
-        return await generateBirthdateQuestion()
-      case "population":
-        return await generatePopulationQuestion()
-      case "area":
-        return await generateAreaQuestion()
-      case "invention":
-        return await generateInventionQuestion()
-      case "element":
-        return await generateElementQuestion()
-      case "author":
-        return await generateAuthorQuestion()
-      case "mountain":
-        return await generateMountainQuestion()
-      default:
-        return await generateCapitalQuestion() // Por defecto, pregunta sobre capitales
+  game: {
+    level: string
+    prize: string
+    timeRemaining: string
+    lifelines: {
+      fiftyFifty: string
+      audience: string
+      phone: string
     }
-  } catch (error) {
-    console.error(`Error generating ${randomType} question:`, error)
-
-    // Si falla un tipo específico, intentar con otro tipo
-    const remainingTypes = questionTypes.filter((type) => type !== randomType)
-
-    if (remainingTypes.length > 0) {
-      const fallbackType = remainingTypes[Math.floor(Math.random() * remainingTypes.length)]
-      console.log(`Trying fallback question type: ${fallbackType}`)
-
-      // Intentar con un tipo alternativo
-      switch (fallbackType) {
-        case "capital":
-          return await generateCapitalQuestion()
-        case "population":
-          return await generatePopulationQuestion()
-        case "element":
-          return await generateElementQuestion()
-        default:
-          // Si todo falla, usar una pregunta de respaldo
-          throw new Error("All question types failed")
-      }
+    audienceHelp: {
+      title: string
+      description: string
     }
-
-    // Si no hay más tipos para intentar, lanzar el error original
-    throw error
+    phoneAFriend: {
+      title: string
+      description: string
+      veryConfident: string
+      quiteConfident: string
+      notSure: string
+    }
+    prizeLevel: string
+    gameOver: string
+    finalScore: string
+    congratulations: string
+    playAgain: string
+    viewLeaderboard: string
+    enterName: string
+    startGame: string
+    backToHome: string
+    nameRequired: {
+      title: string
+      description: string
+    }
+  }
+  leaderboard: {
+    title: string
+    description: string
+    tabs: {
+      daily: string
+      weekly: string
+      monthly: string
+    }
+    noData: string
+    points: string
+  }
+  auth: {
+    login: string
+    logout: string
+    comingSoon: string
   }
 }
 
-// Función para obtener tipos de preguntas según dificultad
-function getQuestionTypesByDifficulty(difficulty: string): string[] {
-  switch (difficulty) {
-    case "easy":
-      return ["capital", "population"] // Eliminado "birthdate" que causaba problemas
-    case "medium":
-      return ["area", "element", "author"]
-    case "hard":
-      return ["element", "mountain", "invention"]
+// Traducciones en español
+export const es: Translations = {
+  general: {
+    appName: "WikiMillionaire",
+    play: "Jugar Ahora",
+    leaderboard: "Clasificaciones",
+    about: "Acerca de",
+    privacy: "Privacidad",
+    terms: "Términos",
+    loading: "Cargando...",
+    error: "Error al cargar. Inténtalo de nuevo.",
+    credits: "Juego creado por Daniel Yepez Garces",
+  },
+  home: {
+    tagline: 'Pon a prueba tus conocimientos con nuestro juego de preguntas estilo "¿Quién quiere ser millonario?"',
+    description: "usando datos reales de Wikidata.",
+    features: {
+      wikidata: {
+        title: "Preguntas de Wikidata",
+        description: "Preguntas generadas a partir de la base de conocimientos de Wikidata.",
+      },
+      dailyContest: {
+        title: "Concurso Diario",
+        description: "Nuevas preguntas cada día para competir con otros jugadores.",
+      },
+      leaderboard: {
+        title: "Tablas de Clasificación",
+        description: "Compite por los primeros puestos en clasificaciones diarias, semanales y mensuales.",
+      },
+    },
+  },
+  game: {
+    level: "Nivel",
+    prize: "Premio",
+    timeRemaining: "Tiempo restante",
+    lifelines: {
+      fiftyFifty: "50:50",
+      audience: "Ayuda del Público",
+      phone: "Llamada a un Amigo",
+    },
+    audienceHelp: {
+      title: "Ayuda del Público",
+      description: "La mayoría del público piensa que la respuesta correcta es:",
+    },
+    phoneAFriend: {
+      title: "Llamada a un Amigo",
+      description: "Tu amigo",
+      veryConfident: "está muy seguro de que la respuesta es",
+      quiteConfident: "está bastante seguro de que la respuesta es",
+      notSure: "no está seguro, pero cree que podría ser",
+    },
+    prizeLevel: "Niveles de Premio",
+    gameOver: "Juego Terminado",
+    finalScore: "Tu puntuación final",
+    congratulations: "¡Felicidades, Millonario!",
+    playAgain: "Jugar de Nuevo",
+    viewLeaderboard: "Ver Clasificaciones",
+    enterName: "Tu nombre",
+    startGame: "Comenzar Juego",
+    backToHome: "Volver al Inicio",
+    nameRequired: {
+      title: "Nombre requerido",
+      description: "Por favor ingresa tu nombre para comenzar",
+    },
+  },
+  leaderboard: {
+    title: "Tabla de Clasificación",
+    description: "Compite por los primeros puestos y demuestra tus conocimientos",
+    tabs: {
+      daily: "Diario",
+      weekly: "Semanal",
+      monthly: "Mensual",
+    },
+    noData: "No hay datos disponibles para este período.",
+    points: "puntos",
+  },
+  auth: {
+    login: "Iniciar sesión con Wikidata",
+    logout: "Cerrar sesión",
+    comingSoon: "Próximamente",
+  },
+}
+
+// Traducciones en inglés
+export const en: Translations = {
+  general: {
+    appName: "WikiMillionaire",
+    play: "Play Now",
+    leaderboard: "Leaderboard",
+    about: "About",
+    privacy: "Privacy",
+    terms: "Terms",
+    loading: "Loading...",
+    error: "Error loading. Please try again.",
+    credits: "Game created by Daniel Yepez Garces",
+  },
+  home: {
+    tagline: 'Test your knowledge with our "Who Wants to Be a Millionaire?" style quiz game',
+    description: "using real data from Wikidata.",
+    features: {
+      wikidata: {
+        title: "Wikidata Questions",
+        description: "Questions generated from the Wikidata knowledge base.",
+      },
+      dailyContest: {
+        title: "Daily Contest",
+        description: "New questions every day to compete with other players.",
+      },
+      leaderboard: {
+        title: "Leaderboards",
+        description: "Compete for the top spots in daily, weekly, and monthly rankings.",
+      },
+    },
+  },
+  game: {
+    level: "Level",
+    prize: "Prize",
+    timeRemaining: "Time remaining",
+    lifelines: {
+      fiftyFifty: "50:50",
+      audience: "Ask the Audience",
+      phone: "Phone a Friend",
+    },
+    audienceHelp: {
+      title: "Ask the Audience",
+      description: "Most of the audience thinks the correct answer is:",
+    },
+    phoneAFriend: {
+      title: "Phone a Friend",
+      description: "Your friend",
+      veryConfident: "is very confident that the answer is",
+      quiteConfident: "is quite confident that the answer is",
+      notSure: "is not sure, but thinks it might be",
+    },
+    prizeLevel: "Prize Levels",
+    gameOver: "Game Over",
+    finalScore: "Your final score",
+    congratulations: "Congratulations, Millionaire!",
+    playAgain: "Play Again",
+    viewLeaderboard: "View Leaderboard",
+    enterName: "Your name",
+    startGame: "Start Game",
+    backToHome: "Back to Home",
+    nameRequired: {
+      title: "Name required",
+      description: "Please enter your name to start",
+    },
+  },
+  leaderboard: {
+    title: "Leaderboard",
+    description: "Compete for the top spots and show your knowledge",
+    tabs: {
+      daily: "Daily",
+      weekly: "Weekly",
+      monthly: "Monthly",
+    },
+    noData: "No data available for this period.",
+    points: "points",
+  },
+  auth: {
+    login: "Login with Wikidata",
+    logout: "Logout",
+    comingSoon: "Coming Soon",
+  },
+}
+
+// Traducciones en francés
+export const fr: Translations = {
+  general: {
+    appName: "WikiMillionaire",
+    play: "Jouer Maintenant",
+    leaderboard: "Classement",
+    about: "À propos",
+    privacy: "Confidentialité",
+    terms: "Conditions",
+    loading: "Chargement...",
+    error: "Erreur de chargement. Veuillez réessayer.",
+    credits: "Jeu créé par Daniel Yepez Garces",
+  },
+  home: {
+    tagline: 'Testez vos connaissances avec notre jeu de quiz style "Qui veut gagner des millions ?"',
+    description: "en utilisant des données réelles de Wikidata.",
+    features: {
+      wikidata: {
+        title: "Questions Wikidata",
+        description: "Questions générées à partir de la base de connaissances Wikidata.",
+      },
+      dailyContest: {
+        title: "Concours Quotidien",
+        description: "Nouvelles questions chaque jour pour rivaliser avec d'autres joueurs.",
+      },
+      leaderboard: {
+        title: "Classements",
+        description: "Concourez pour les premières places dans les classements quotidiens, hebdomadaires et mensuels.",
+      },
+    },
+  },
+  game: {
+    level: "Niveau",
+    prize: "Prix",
+    timeRemaining: "Temps restant",
+    lifelines: {
+      fiftyFifty: "50:50",
+      audience: "L'avis du Public",
+      phone: "Appel à un Ami",
+    },
+    audienceHelp: {
+      title: "L'avis du Public",
+      description: "La majorité du public pense que la bonne réponse est :",
+    },
+    phoneAFriend: {
+      title: "Appel à un Ami",
+      description: "Votre ami",
+      veryConfident: "est très confiant que la réponse est",
+      quiteConfident: "est assez confiant que la réponse est",
+      notSure: "n'est pas sûr, mais pense que ça pourrait être",
+    },
+    prizeLevel: "Niveaux de Prix",
+    gameOver: "Partie Terminée",
+    finalScore: "Votre score final",
+    congratulations: "Félicitations, Millionnaire !",
+    playAgain: "Rejouer",
+    viewLeaderboard: "Voir le Classement",
+    enterName: "Votre nom",
+    startGame: "Commencer le Jeu",
+    backToHome: "Retour à l'Accueil",
+    nameRequired: {
+      title: "Nom requis",
+      description: "Veuillez entrer votre nom pour commencer",
+    },
+  },
+  leaderboard: {
+    title: "Classement",
+    description: "Concourez pour les premières places et montrez vos connaissances",
+    tabs: {
+      daily: "Quotidien",
+      weekly: "Hebdomadaire",
+      monthly: "Mensuel",
+    },
+    noData: "Aucune donnée disponible pour cette période.",
+    points: "points",
+  },
+  auth: {
+    login: "Se connecter avec Wikidata",
+    logout: "Se déconnecter",
+    comingSoon: "Bientôt Disponible",
+  },
+}
+
+// Traducciones en alemán
+export const de: Translations = {
+  general: {
+    appName: "WikiMillionaire",
+    play: "Jetzt Spielen",
+    leaderboard: "Bestenliste",
+    about: "Über",
+    privacy: "Datenschutz",
+    terms: "Bedingungen",
+    loading: "Wird geladen...",
+    error: "Fehler beim Laden. Bitte versuchen Sie es erneut.",
+    credits: "Spiel erstellt von Daniel Yepez Garces",
+  },
+  home: {
+    tagline: 'Testen Sie Ihr Wissen mit unserem Quiz-Spiel im Stil von "Wer wird Millionär?"',
+    description: "mit echten Daten aus Wikidata.",
+    features: {
+      wikidata: {
+        title: "Wikidata-Fragen",
+        description: "Fragen aus der Wikidata-Wissensdatenbank generiert.",
+      },
+      dailyContest: {
+        title: "Täglicher Wettbewerb",
+        description: "Neue Fragen jeden Tag, um mit anderen Spielern zu konkurrieren.",
+      },
+      leaderboard: {
+        title: "Bestenlisten",
+        description: "Kämpfen Sie um die Spitzenplätze in täglichen, wöchentlichen und monatlichen Ranglisten.",
+      },
+    },
+  },
+  game: {
+    level: "Stufe",
+    prize: "Preis",
+    timeRemaining: "Verbleibende Zeit",
+    lifelines: {
+      fiftyFifty: "50:50",
+      audience: "Publikumsfrage",
+      phone: "Telefonjoker",
+    },
+    audienceHelp: {
+      title: "Publikumsfrage",
+      description: "Die Mehrheit des Publikums denkt, dass die richtige Antwort ist:",
+    },
+    phoneAFriend: {
+      title: "Telefonjoker",
+      description: "Dein Freund",
+      veryConfident: "ist sehr zuversichtlich, dass die Antwort ist",
+      quiteConfident: "ist ziemlich zuversichtlich, dass die Antwort ist",
+      notSure: "ist nicht sicher, denkt aber, es könnte sein",
+    },
+    prizeLevel: "Preisstufen",
+    gameOver: "Spiel Beendet",
+    finalScore: "Deine Endpunktzahl",
+    congratulations: "Herzlichen Glückwunsch, Millionär!",
+    playAgain: "Nochmal Spielen",
+    viewLeaderboard: "Bestenliste Anzeigen",
+    enterName: "Dein Name",
+    startGame: "Spiel Starten",
+    backToHome: "Zurück zur Startseite",
+    nameRequired: {
+      title: "Name erforderlich",
+      description: "Bitte gib deinen Namen ein, um zu beginnen",
+    },
+  },
+  leaderboard: {
+    title: "Bestenliste",
+    description: "Kämpfe um die Spitzenplätze und zeige dein Wissen",
+    tabs: {
+      daily: "Täglich",
+      weekly: "Wöchentlich",
+      monthly: "Monatlich",
+    },
+    noData: "Keine Daten für diesen Zeitraum verfügbar.",
+    points: "Punkte",
+  },
+  auth: {
+    login: "Mit Wikidata anmelden",
+    logout: "Abmelden",
+    comingSoon: "Demnächst Verfügbar",
+  },
+}
+
+// Traducciones en portugués
+export const pt: Translations = {
+  general: {
+    appName: "WikiMillionaire",
+    play: "Jogar Agora",
+    leaderboard: "Classificação",
+    about: "Sobre",
+    privacy: "Privacidade",
+    terms: "Termos",
+    loading: "Carregando...",
+    error: "Erro ao carregar. Tente novamente.",
+    credits: "Jogo criado por Daniel Yepez Garces",
+  },
+  home: {
+    tagline: 'Teste seus conhecimentos com nosso jogo de perguntas estilo "Quem Quer Ser um Milionário?"',
+    description: "usando dados reais do Wikidata.",
+    features: {
+      wikidata: {
+        title: "Perguntas do Wikidata",
+        description: "Perguntas geradas a partir da base de conhecimento do Wikidata.",
+      },
+      dailyContest: {
+        title: "Concurso Diário",
+        description: "Novas perguntas todos os dias para competir com outros jogadores.",
+      },
+      leaderboard: {
+        title: "Tabelas de Classificação",
+        description: "Compita pelos primeiros lugares nas classificações diárias, semanais e mensais.",
+      },
+    },
+  },
+  game: {
+    level: "Nível",
+    prize: "Prêmio",
+    timeRemaining: "Tempo restante",
+    lifelines: {
+      fiftyFifty: "50:50",
+      audience: "Ajuda da Plateia",
+      phone: "Ligar para um Amigo",
+    },
+    audienceHelp: {
+      title: "Ajuda da Plateia",
+      description: "A maioria da plateia acha que a resposta correta é:",
+    },
+    phoneAFriend: {
+      title: "Ligar para um Amigo",
+      description: "Seu amigo",
+      veryConfident: "está muito confiante de que a resposta é",
+      quiteConfident: "está bastante confiante de que a resposta é",
+      notSure: "não tem certeza, mas acha que pode ser",
+    },
+    prizeLevel: "Níveis de Prêmio",
+    gameOver: "Fim de Jogo",
+    finalScore: "Sua pontuação final",
+    congratulations: "Parabéns, Milionário!",
+    playAgain: "Jogar Novamente",
+    viewLeaderboard: "Ver Classificação",
+    enterName: "Seu nome",
+    startGame: "Iniciar Jogo",
+    backToHome: "Voltar ao Início",
+    nameRequired: {
+      title: "Nome necessário",
+      description: "Por favor, insira seu nome para começar",
+    },
+  },
+  leaderboard: {
+    title: "Classificação",
+    description: "Compita pelos primeiros lugares e mostre seu conhecimento",
+    tabs: {
+      daily: "Diário",
+      weekly: "Semanal",
+      monthly: "Mensal",
+    },
+    noData: "Não há dados disponíveis para este período.",
+    points: "pontos",
+  },
+  auth: {
+    login: "Entrar com Wikidata",
+    logout: "Sair",
+    comingSoon: "Em Breve",
+  },
+}
+
+// Función para obtener las traducciones según el idioma
+export function getTranslations(locale: Locale): Translations {
+  switch (locale) {
+    case "es":
+      return es
+    case "en":
+      return en
+    case "fr":
+      return fr
+    case "de":
+      return de
+    case "pt":
+      return pt
     default:
-      return ["capital"]
+      return es
   }
 }
 
-// Función para generar una pregunta sobre capitales de países
-async function generateCapitalQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?country ?countryLabel ?capital ?capitalLabel WHERE {
-      ?country wdt:P31 wd:Q6256 .      # Instancia de país
-      ?country wdt:P36 ?capital .      # Capital
-      
-      # Filtrar para obtener solo países importantes
-      ?country wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 50)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 15
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre capitales")
-  }
-
-  // Seleccionar un país aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * Math.min(results.length, 10))
-  const selectedCountry = results[randomIndex]
-
-  // Crear la pregunta
-  const question = `¿Cuál es la capital de ${selectedCountry.countryLabel.value}?`
-  const correctAnswer = selectedCountry.capitalLabel.value
-
-  // Generar opciones incorrectas (otras capitales)
-  const incorrectOptions = results
-    .filter((result) => result.capitalLabel.value !== correctAnswer)
-    .map((result) => result.capitalLabel.value)
-    .slice(0, 3)
-
-  // Mezclar las opciones
-  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-  return {
-    question,
-    options,
-    correctAnswer,
-    id: `capital-${selectedCountry.country.value.split("/").pop()}`,
+// Función para obtener el nombre del idioma
+export function getLanguageName(locale: Locale): string {
+  switch (locale) {
+    case "es":
+      return "Español"
+    case "en":
+      return "English"
+    case "fr":
+      return "Français"
+    case "de":
+      return "Deutsch"
+    case "pt":
+      return "Português"
+    default:
+      return "Español"
   }
 }
 
-// Función para generar una pregunta sobre fechas de nacimiento de personas famosas
-// Esta función estaba causando problemas, la he simplificado significativamente
-async function generateBirthdateQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada y optimizada
-  const sparqlQuery = `
-    SELECT ?person ?personLabel ?birthyear WHERE {
-      # Personas famosas con muchos enlaces en Wikipedia
-      ?person wdt:P31 wd:Q5 .          # Instancia de ser humano
-      ?person wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 100)         # Personas muy conocidas
-      
-      # Año de nacimiento (más simple que fecha completa)
-      ?person p:P569/psv:P569 [wikibase:timeValue ?birthdate; wikibase:timePrecision ?precision] .
-      BIND(YEAR(?birthdate) as ?birthyear) .
-      FILTER(?precision >= 9)          # Precisión de al menos año
-      FILTER(?birthyear > 1700)        # Personas relativamente modernas
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 10
-  `
-
-  try {
-    const data = await fetchFromWikidata(sparqlQuery)
-    const results = data.results.bindings
-
-    if (!results || results.length === 0) {
-      throw new Error("No se encontraron datos para la pregunta sobre fechas de nacimiento")
-    }
-
-    // Seleccionar una persona aleatoria para la pregunta
-    const randomIndex = Math.floor(Math.random() * results.length)
-    const selectedPerson = results[randomIndex]
-
-    // Extraer el año de nacimiento
-    const birthYear = Number.parseInt(selectedPerson.birthyear.value)
-
-    // Crear la pregunta
-    const question = `¿En qué año nació ${selectedPerson.personLabel.value}?`
-    const correctAnswer = birthYear.toString()
-
-    // Generar opciones incorrectas (años cercanos pero diferentes)
-    const incorrectOptions = [(birthYear - 5).toString(), (birthYear + 5).toString(), (birthYear - 10).toString()]
-
-    // Mezclar las opciones
-    const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-    return {
-      question,
-      options,
-      correctAnswer,
-      id: `birthdate-${selectedPerson.person.value.split("/").pop()}`,
-    }
-  } catch (error) {
-    console.error("Error in birthdate question:", error)
-    throw new Error("Failed to generate birthdate question")
-  }
-}
-
-// Función para generar una pregunta sobre población de países
-async function generatePopulationQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?country ?countryLabel ?population WHERE {
-      ?country wdt:P31 wd:Q6256 .      # Instancia de país
-      ?country wdt:P1082 ?population .  # Población
-      
-      # Filtrar para obtener solo países importantes
-      ?country wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 50)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 15
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre población")
-  }
-
-  // Seleccionar un país aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * Math.min(results.length, 10))
-  const selectedCountry = results[randomIndex]
-
-  // Crear la pregunta
-  const question = `¿Cuál es aproximadamente la población de ${selectedCountry.countryLabel.value}?`
-
-  // Formatear la población correcta (redondeada a millones)
-  const population = Number.parseInt(selectedCountry.population.value)
-  const roundedPopulation = Math.round(population / 1000000) * 1000000
-  const correctAnswer = formatPopulation(roundedPopulation)
-
-  // Generar opciones incorrectas (poblaciones diferentes)
-  const incorrectOptions = [
-    formatPopulation(roundedPopulation * 0.5),
-    formatPopulation(roundedPopulation * 2),
-    formatPopulation(roundedPopulation * 0.75),
-  ]
-
-  // Mezclar las opciones
-  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-  return {
-    question,
-    options,
-    correctAnswer,
-    id: `population-${selectedCountry.country.value.split("/").pop()}`,
-  }
-}
-
-// Función para formatear números de población
-function formatPopulation(population: number): string {
-  if (population >= 1000000) {
-    return `${(population / 1000000).toFixed(1)} millones`
-  } else if (population >= 1000) {
-    return `${(population / 1000).toFixed(1)} mil`
-  } else {
-    return population.toString()
-  }
-}
-
-// Función para generar una pregunta sobre área de países
-async function generateAreaQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?country ?countryLabel ?area WHERE {
-      ?country wdt:P31 wd:Q6256 .      # Instancia de país
-      ?country wdt:P2046 ?area .       # Área
-      
-      # Filtrar para obtener solo países importantes
-      ?country wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 50)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 15
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre área")
-  }
-
-  // Seleccionar un país aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * Math.min(results.length, 10))
-  const selectedCountry = results[randomIndex]
-
-  // Crear la pregunta
-  const question = `¿Cuál es aproximadamente el área de ${selectedCountry.countryLabel.value}?`
-
-  // Formatear el área correcta (redondeada a miles de km²)
-  const area = Number.parseFloat(selectedCountry.area.value)
-  const roundedArea = Math.round(area / 1000) * 1000
-  const correctAnswer = `${roundedArea.toLocaleString()} km²`
-
-  // Generar opciones incorrectas (áreas diferentes)
-  const incorrectOptions = [
-    `${Math.round(roundedArea * 0.5).toLocaleString()} km²`,
-    `${Math.round(roundedArea * 2).toLocaleString()} km²`,
-    `${Math.round(roundedArea * 0.75).toLocaleString()} km²`,
-  ]
-
-  // Mezclar las opciones
-  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-  return {
-    question,
-    options,
-    correctAnswer,
-    id: `area-${selectedCountry.country.value.split("/").pop()}`,
-  }
-}
-
-// Función para generar una pregunta sobre inventores
-async function generateInventionQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?invention ?inventionLabel ?inventor ?inventorLabel WHERE {
-      ?invention wdt:P31/wdt:P279* wd:Q11019 .  # Instancia o subclase de artefacto tecnológico
-      ?invention wdt:P61 ?inventor .           # Inventor
-      ?inventor wdt:P31 wd:Q5 .                # Inventor es humano
-      
-      # Filtrar para obtener solo inventos conocidos
-      ?invention wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 20)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 10
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre inventos")
-  }
-
-  // Seleccionar un invento aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * results.length)
-  const selectedInvention = results[randomIndex]
-
-  // Crear la pregunta
-  const question = `¿Quién inventó ${selectedInvention.inventionLabel.value}?`
-  const correctAnswer = selectedInvention.inventorLabel.value
-
-  // Obtener otros inventores para opciones incorrectas
-  const otherInventors = results
-    .filter((result) => result.inventorLabel.value !== correctAnswer)
-    .map((result) => result.inventorLabel.value)
-
-  // Eliminar duplicados
-  const uniqueInventors = [...new Set(otherInventors)]
-
-  // Seleccionar 3 inventores aleatorios para opciones incorrectas
-  const incorrectOptions = uniqueInventors.sort(() => Math.random() - 0.5).slice(0, 3)
-
-  // Mezclar las opciones
-  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-  return {
-    question,
-    options,
-    correctAnswer,
-    id: `invention-${selectedInvention.invention.value.split("/").pop()}`,
-  }
-}
-
-// Función para generar una pregunta sobre elementos químicos
-async function generateElementQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?element ?elementLabel ?symbol WHERE {
-      ?element wdt:P31 wd:Q11344 .      # Instancia de elemento químico
-      ?element wdt:P246 ?symbol .       # Símbolo químico
-      
-      # Filtrar para obtener solo elementos comunes
-      FILTER(STRLEN(?symbol) <= 2)      # Símbolos de 1 o 2 caracteres
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 20
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre elementos químicos")
-  }
-
-  // Seleccionar un elemento aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * Math.min(results.length, 15))
-  const selectedElement = results[randomIndex]
-
-  // Decidir aleatoriamente si preguntar por el símbolo o por el elemento
-  const askForSymbol = Math.random() > 0.5
-
-  let question, correctAnswer
-
-  if (askForSymbol) {
-    question = `¿Cuál es el símbolo químico del ${selectedElement.elementLabel.value}?`
-    correctAnswer = selectedElement.symbol.value
-
-    // Generar opciones incorrectas (otros símbolos)
-    const incorrectOptions = results
-      .filter((result) => result.symbol.value !== correctAnswer)
-      .map((result) => result.symbol.value)
-      .slice(0, 3)
-
-    // Mezclar las opciones
-    const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-    return {
-      question,
-      options,
-      correctAnswer,
-      id: `element-symbol-${selectedElement.element.value.split("/").pop()}`,
-    }
-  } else {
-    question = `¿Qué elemento químico tiene el símbolo "${selectedElement.symbol.value}"?`
-    correctAnswer = selectedElement.elementLabel.value
-
-    // Generar opciones incorrectas (otros elementos)
-    const incorrectOptions = results
-      .filter((result) => result.elementLabel.value !== correctAnswer)
-      .map((result) => result.elementLabel.value)
-      .slice(0, 3)
-
-    // Mezclar las opciones
-    const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-    return {
-      question,
-      options,
-      correctAnswer,
-      id: `element-name-${selectedElement.element.value.split("/").pop()}`,
-    }
-  }
-}
-
-// Función para generar una pregunta sobre autores de libros
-async function generateAuthorQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?book ?bookLabel ?author ?authorLabel WHERE {
-      ?book wdt:P31 wd:Q571 .           # Instancia de libro
-      ?book wdt:P50 ?author .           # Autor
-      ?author wdt:P31 wd:Q5 .           # Autor es humano
-      
-      # Filtrar para obtener solo libros conocidos
-      ?book wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 30)           # Libros con muchos enlaces (populares)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 10
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre autores")
-  }
-
-  // Seleccionar un libro aleatorio para la pregunta
-  const randomIndex = Math.floor(Math.random() * results.length)
-  const selectedBook = results[randomIndex]
-
-  // Crear la pregunta
-  const question = `¿Quién escribió "${selectedBook.bookLabel.value}"?`
-  const correctAnswer = selectedBook.authorLabel.value
-
-  // Obtener otros autores para opciones incorrectas
-  const otherAuthors = results
-    .filter((result) => result.authorLabel.value !== correctAnswer)
-    .map((result) => result.authorLabel.value)
-
-  // Eliminar duplicados
-  const uniqueAuthors = [...new Set(otherAuthors)]
-
-  // Seleccionar 3 autores aleatorios para opciones incorrectas
-  const incorrectOptions = uniqueAuthors.sort(() => Math.random() - 0.5).slice(0, 3)
-
-  // Mezclar las opciones
-  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-  return {
-    question,
-    options,
-    correctAnswer,
-    id: `author-${selectedBook.book.value.split("/").pop()}`,
-  }
-}
-
-// Función para generar una pregunta sobre montañas
-async function generateMountainQuestion(): Promise<WikidataQuestion> {
-  // Consulta SPARQL simplificada
-  const sparqlQuery = `
-    SELECT ?mountain ?mountainLabel ?elevation ?country ?countryLabel WHERE {
-      ?mountain wdt:P31 wd:Q8502 .      # Instancia de montaña
-      ?mountain wdt:P2044 ?elevation .   # Elevación sobre el nivel del mar
-      ?mountain wdt:P17 ?country .       # País
-      
-      # Filtrar para obtener solo montañas conocidas
-      ?mountain wikibase:sitelinks ?sitelinks .
-      FILTER(?sitelinks > 20)
-      
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY RAND()
-    LIMIT 10
-  `
-
-  const data = await fetchFromWikidata(sparqlQuery)
-  const results = data.results.bindings
-
-  if (!results || results.length === 0) {
-    throw new Error("No se encontraron datos para la pregunta sobre montañas")
-  }
-
-  // Seleccionar una montaña aleatoria para la pregunta
-  const randomIndex = Math.floor(Math.random() * results.length)
-  const selectedMountain = results[randomIndex]
-
-  // Decidir aleatoriamente si preguntar por la elevación o por el país
-  const askForElevation = Math.random() > 0.5
-
-  let question, correctAnswer
-
-  if (askForElevation) {
-    question = `¿Cuál es aproximadamente la altura del ${selectedMountain.mountainLabel.value}?`
-    const elevation = Math.round(Number.parseFloat(selectedMountain.elevation.value))
-    correctAnswer = `${elevation.toLocaleString()} metros`
-
-    // Generar opciones incorrectas (otras elevaciones)
-    const incorrectOptions = [
-      `${Math.round(elevation * 0.8).toLocaleString()} metros`,
-      `${Math.round(elevation * 1.2).toLocaleString()} metros`,
-      `${Math.round(elevation * 0.6).toLocaleString()} metros`,
-    ]
-
-    // Mezclar las opciones
-    const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-    return {
-      question,
-      options,
-      correctAnswer,
-      id: `mountain-elevation-${selectedMountain.mountain.value.split("/").pop()}`,
-    }
-  } else {
-    question = `¿En qué país se encuentra el ${selectedMountain.mountainLabel.value}?`
-    correctAnswer = selectedMountain.countryLabel.value
-
-    // Obtener otros países para opciones incorrectas
-    const otherCountries = results
-      .filter((result) => result.countryLabel.value !== correctAnswer)
-      .map((result) => result.countryLabel.value)
-
-    // Eliminar duplicados
-    const uniqueCountries = [...new Set(otherCountries)]
-
-    // Seleccionar 3 países aleatorios para opciones incorrectas
-    const incorrectOptions = uniqueCountries.sort(() => Math.random() - 0.5).slice(0, 3)
-
-    // Mezclar las opciones
-    const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
-
-    return {
-      question,
-      options,
-      correctAnswer,
-      id: `mountain-country-${selectedMountain.mountain.value.split("/").pop()}`,
-    }
-  }
-}
-
-// Sistema de caché para preguntas generadas
-const questionCache: Record<string, WikidataQuestion[]> = {
-  easy: [],
-  medium: [],
-  hard: [],
-}
-
-// Función para obtener una pregunta del caché o generarla si no hay
-async function getCachedOrGenerateQuestion(difficulty: string): Promise<WikidataQuestion> {
-  // Verificar si hay preguntas en caché
-  if (questionCache[difficulty] && questionCache[difficulty].length > 0) {
-    // Usar una pregunta del caché
-    const randomIndex = Math.floor(Math.random() * questionCache[difficulty].length)
-    const question = questionCache[difficulty][randomIndex]
-
-    // Eliminar la pregunta usada del caché
-    questionCache[difficulty] = [
-      ...questionCache[difficulty].slice(0, randomIndex),
-      ...questionCache[difficulty].slice(randomIndex + 1),
-    ]
-
-    return question
-  }
-
-  // Si no hay preguntas en caché, generar una nueva
-  return await generateWikidataQuestion(difficulty)
-}
-
-// Función para obtener preguntas de respaldo en caso de error
-function getBackupQuestion(difficulty: string): WikidataQuestion {
-  const questions = {
-    easy: [
-      {
-        question: "¿Cuál es la capital de Francia?",
-        options: ["París", "Londres", "Berlín", "Madrid"],
-        correctAnswer: "París",
-        id: "backup-1",
-      },
-      {
-        question: "¿Quién pintó la Mona Lisa?",
-        options: ["Leonardo da Vinci", "Pablo Picasso", "Vincent van Gogh", "Miguel Ángel"],
-        correctAnswer: "Leonardo da Vinci",
-        id: "backup-2",
-      },
-      {
-        question: "¿En qué año comenzó la Segunda Guerra Mundial?",
-        options: ["1939", "1945", "1914", "1918"],
-        correctAnswer: "1939",
-        id: "backup-3",
-      },
-      {
-        question: "¿Cuál es el río más largo del mundo?",
-        options: ["Amazonas", "Nilo", "Misisipi", "Yangtsé"],
-        correctAnswer: "Amazonas",
-        id: "backup-4",
-      },
-      {
-        question: "¿Cuál es el país más grande del mundo por superficie?",
-        options: ["Rusia", "China", "Estados Unidos", "Canadá"],
-        correctAnswer: "Rusia",
-        id: "backup-5",
-      },
-    ],
-    medium: [
-      {
-        question: "¿Cuál es el elemento químico con símbolo 'Au'?",
-        options: ["Oro", "Plata", "Aluminio", "Argón"],
-        correctAnswer: "Oro",
-        id: "backup-6",
-      },
-      {
-        question: "¿Qué planeta es conocido como el 'planeta rojo'?",
-        options: ["Marte", "Venus", "Júpiter", "Saturno"],
-        correctAnswer: "Marte",
-        id: "backup-7",
-      },
-      {
-        question: "¿Quién escribió 'Cien años de soledad'?",
-        options: ["Gabriel García Márquez", "Mario Vargas Llosa", "Julio Cortázar", "Isabel Allende"],
-        correctAnswer: "Gabriel García Márquez",
-        id: "backup-8",
-      },
-      {
-        question: "¿En qué año se fundó la ONU?",
-        options: ["1945", "1918", "1939", "1955"],
-        correctAnswer: "1945",
-        id: "backup-9",
-      },
-      {
-        question: "¿Cuál es la montaña más alta del mundo?",
-        options: ["Monte Everest", "K2", "Kangchenjunga", "Lhotse"],
-        correctAnswer: "Monte Everest",
-        id: "backup-10",
-      },
-    ],
-    hard: [
-      {
-        question: "¿En qué año se descubrió la estructura del ADN?",
-        options: ["1953", "1947", "1962", "1971"],
-        correctAnswer: "1953",
-        id: "backup-11",
-      },
-      {
-        question: "¿Cuál es la partícula subatómica más pesada?",
-        options: ["Quark top", "Neutrón", "Protón", "Electrón"],
-        correctAnswer: "Quark top",
-        id: "backup-12",
-      },
-      {
-        question: "¿Qué científico propuso la teoría de la relatividad general?",
-        options: ["Albert Einstein", "Isaac Newton", "Niels Bohr", "Stephen Hawking"],
-        correctAnswer: "Albert Einstein",
-        id: "backup-13",
-      },
-      {
-        question: "¿Cuál es el compuesto químico con la fórmula H2O2?",
-        options: ["Peróxido de hidrógeno", "Agua", "Ácido sulfúrico", "Metano"],
-        correctAnswer: "Peróxido de hidrógeno",
-        id: "backup-14",
-      },
-      {
-        question: "¿Qué famoso teorema relaciona los lados de un triángulo rectángulo?",
-        options: ["Teorema de Pitágoras", "Teorema de Tales", "Teorema de Fermat", "Teorema de Bayes"],
-        correctAnswer: "Teorema de Pitágoras",
-        id: "backup-15",
-      },
-    ],
-  }
-
-  // Obtener preguntas ya utilizadas del almacenamiento local
-  const usedQuestionsJson = localStorage.getItem("wikimillionaire-used-questions")
-  const usedQuestions = usedQuestionsJson ? JSON.parse(usedQuestionsJson) : []
-
-  // Seleccionar preguntas disponibles (no utilizadas)
-  const categoryQuestions = questions[difficulty as keyof typeof questions]
-  const availableQuestions = categoryQuestions.filter((q) => !usedQuestions.includes(q.id))
-
-  // Si no hay preguntas disponibles, reiniciar las preguntas usadas
-  if (availableQuestions.length === 0) {
-    localStorage.setItem("wikimillionaire-used-questions", JSON.stringify([]))
-    return categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)]
-  }
-
-  // Seleccionar una pregunta aleatoria de las disponibles
-  const randomIndex = Math.floor(Math.random() * availableQuestions.length)
-  const selectedQuestion = availableQuestions[randomIndex]
-
-  // Guardar la pregunta como utilizada
-  usedQuestions.push(selectedQuestion.id)
-  localStorage.setItem("wikimillionaire-used-questions", JSON.stringify(usedQuestions))
-
-  return selectedQuestion
-}
-
-// Exportar la función generateWikidataQuestion para que pueda ser usada por el panel de pruebas
-export { generateWikidataQuestion }
+// Lista de idiomas disponibles
+export const availableLocales: Locale[] = ["es", "en", "fr", "de", "pt"]

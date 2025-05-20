@@ -11,6 +11,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "WikiMillionaire - Juego de Preguntas con Wikidata",
   description: "Un juego de preguntas estilo '¿Quién quiere ser millonario?' usando datos de Wikidata",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -25,6 +26,7 @@ export default function RootLayout({
           <AuthProvider>
             <SessionHandler />
             {children}
+            <AuthDebug />
           </AuthProvider>
         </ThemeProvider>
       </body>

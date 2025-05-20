@@ -37,32 +37,6 @@ export function AuthDebug() {
     setShowCookies(!showCookies)
   }
 
-  const handleFixAuthId = async () => {
-    try {
-      const response = await fetch("/api/auth/fix-auth-id", {
-        method: "POST",
-      })
-      const data = await response.json()
-      console.log("Respuesta de fix-auth-id:", data)
-      await refreshUser()
-    } catch (error) {
-      console.error("Error al arreglar auth_id:", error)
-    }
-  }
-
-  const handleForceLogin = async () => {
-    try {
-      const response = await fetch("/api/auth/force-login", {
-        method: "POST",
-      })
-      const data = await response.json()
-      console.log("Respuesta de force-login:", data)
-      window.location.reload()
-    } catch (error) {
-      console.error("Error al forzar login:", error)
-    }
-  }
-
   const handleCreateSession = async () => {
     try {
       if (!wikimediaId) {
@@ -139,12 +113,6 @@ export function AuthDebug() {
         </Button>
         <Button variant="outline" size="sm" onClick={handleShowCookies}>
           {showCookies ? "Ocultar Cookies" : "Mostrar Cookies"}
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleFixAuthId}>
-          Arreglar auth_id
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleForceLogin}>
-          Forzar Login
         </Button>
         <Button
           variant="outline"
