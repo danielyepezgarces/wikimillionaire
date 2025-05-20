@@ -93,6 +93,7 @@ export type Translations = {
   profile: {
     title: string
     welcome: string
+    welcomesubtitle: string
     stats: {
       title: string
       gamesPlayed: string
@@ -292,6 +293,9 @@ export const es: Translations = {
   profile: {
     title: "Perfil de Usuario",
     welcome: "Bienvenido, {username}",
+    welcomesubtitle: "Información de tu cuenta de WikiMillionaire",
+    joinedAt: "Registrado desde",
+    lastLogin: "Último acceso",
     stats: {
       title: "Estadísticas",
       gamesPlayed: "Partidas jugadas",
@@ -491,6 +495,9 @@ export const en: Translations = {
   profile: {
     title: "User Profile",
     welcome: "Welcome, {username}",
+    welcomesubtitle: "Information about your WikiMillionaire account",
+    joinedAt: "Joined on",
+    lastLogin: "Last login",
     stats: {
       title: "Statistics",
       gamesPlayed: "Games played",
@@ -690,6 +697,9 @@ export const fr: Translations = {
   profile: {
     title: "Profil Utilisateur",
     welcome: "Bienvenue, {username}",
+    welcomesubtitle: "Informations sur votre compte WikiMillionaire",
+    joinedAt: "Inscrit le",
+    lastLogin: "Dernière connexion",
     stats: {
       title: "Statistiques",
       gamesPlayed: "Parties jouées",
@@ -889,6 +899,9 @@ export const de: Translations = {
   profile: {
     title: "Benutzerprofil",
     welcome: "Willkommen, {username}",
+    welcomesubtitle: "Informationen zu deinem WikiMillionaire-Konto",
+    joinedAt: "Beigetreten am",
+    lastLogin: "Letzte Anmeldung",
     stats: {
       title: "Statistiken",
       gamesPlayed: "Gespielte Spiele",
@@ -1088,6 +1101,9 @@ export const pt: Translations = {
   profile: {
     title: "Perfil do Usuário",
     welcome: "Bem-vindo, {username}",
+    welcomesubtitle: "Informações sobre sua conta do WikiMillionaire",
+    joinedAt: "Entrou em",
+    lastLogin: "Último login",
     stats: {
       title: "Estatísticas",
       gamesPlayed: "Jogos jogados",
