@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "El estado no coincide" }, { status: 400 })
     }
 
-    // console.log("Intercambiando código por token...")
 
     // Intercambio del código por el token
     const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
@@ -53,7 +52,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json()
-    // console.log("Token obtenido correctamente")
 
     // Retornamos el token y returnTo para que el cliente sepa qué hacer
     return NextResponse.json({

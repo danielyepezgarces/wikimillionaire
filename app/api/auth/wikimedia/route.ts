@@ -3,7 +3,6 @@ import crypto from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
-    // console.log("Iniciando proceso de autenticación con Wikidata")
 
     // Generar state y code verifier aleatorios
     const state = crypto.randomBytes(16).toString("hex")
@@ -43,8 +42,6 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
-    // console.log("URL de autorización Wikidata:", authUrl.substring(0, 100) + "...")
-    // console.log("Estableciendo cookie wikimedia_auth_state con valor:", cookieValue.substring(0, 50) + "...")
 
     // Crear una página HTML que almacene el estado en localStorage y luego redirija
     const html = `

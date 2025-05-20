@@ -9,12 +9,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Falta el token de acceso" }, { status: 400 })
     }
 
-    // console.log("Token recibido:", accessToken.substring(0, 10) + "...")
 
     // Obtener información del usuario desde Wikidata
     const userInfoUrl = "https://www.wikidata.org/w/rest.php/oauth2/resource/profile"
 
-    // console.log("Solicitando información de usuario a Wikidata:", userInfoUrl)
 
     // Intentar obtener la información del usuario con un timeout
     let timeoutId: NodeJS.Timeout | null = null
@@ -42,22 +40,17 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
     }
 
-    // console.log("Código de respuesta de Wikidata:", userInfoResponse.status)
-    // console.log("Headers de respuesta:", Object.fromEntries(userInfoResponse.headers.entries()))
 
     const rawText = await userInfoResponse.text()
-    // console.log("Respuesta cruda de Wikidata:", rawText.substring(0, 200))
 
     if (!userInfoResponse.ok) {
       console.error("Error en respuesta de Wikidata:", rawText)
 
       // Si el error es específicamente sobre wikis incorrectos, intentar con una URL alternativa
       if (rawText.includes("mwoauth-invalid-authorization-wrong-wiki")) {
-        // console.log("Error específico de wiki incorrecto, intentando con URL alternativa...")
 
         // Intentar con una URL alternativa
         const alternativeUrl = "https://www.wikidata.org/w/index.php?title=Special:OAuth/identify"
-        // console.log("Intentando con URL alternativa:", alternativeUrl)
 
         const alternativeResponse = await fetch(alternativeUrl, {
           method: "GET",
@@ -68,14 +61,11 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        // console.log("Código de respuesta alternativa:", alternativeResponse.status)
 
         const alternativeText = await alternativeResponse.text()
-        // console.log("Respuesta alternativa:", alternativeText.substring(0, 200))
 
         if (!alternativeResponse.ok) {
           // Si ambos métodos fallan, crear un usuario de fallback
-          // console.log("Ambos métodos fallaron, usando información de usuario de fallback")
 
           const fallbackUserInfo = {
             sub: "wikidata_user_" + Date.now(), // Generar un ID único
@@ -83,7 +73,6 @@ export async function POST(request: NextRequest) {
             email: null, // Sin email
           }
 
-          // console.log("Usando información de usuario de fallback:", fallbackUserInfo)
 
           // Crear usuario en cookie
           const user = await createUserCookie({
@@ -129,7 +118,6 @@ export async function POST(request: NextRequest) {
           email: alternativeInfo.email || null,
         }
 
-        // console.log("Información del usuario obtenida (alternativa):", userInfo)
 
         // Crear usuario en cookie
         const user = await createUserCookie({
@@ -155,7 +143,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Error al interpretar la respuesta de Wikidata como JSON" }, { status: 502 })
     }
 
-    // console.log("Información del usuario obtenida de Wikidata:", userInfo)
 
     // Crear usuario en cookie
     const user = await createUserCookie({

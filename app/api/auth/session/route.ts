@@ -7,7 +7,6 @@ export async function POST(request: Request) {
     const supabase = createServerSupabaseClient()
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
-    // console.log("Sesión actual:", sessionData?.session ? "Activa" : "No hay sesión")
 
     if (sessionError) {
       console.error("Error al obtener la sesión:", sessionError)

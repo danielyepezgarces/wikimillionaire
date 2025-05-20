@@ -28,17 +28,6 @@ export async function POST(request: NextRequest) {
     params.append("client_secret", clientSecret)
     params.append("code_verifier", codeVerifier)
 
-    // Para depuración (desactivado por ahora)
-    /*
-    console.log("Enviando solicitud de token a Wikidata con parámetros:", {
-      grant_type: "authorization_code",
-      code: code.substring(0, 10) + "...",
-      redirect_uri: redirectUri,
-      client_id: clientId,
-      client_secret: clientSecret.substring(0, 5) + "...",
-      code_verifier: codeVerifier.substring(0, 10) + "...",
-    })
-    */
 
     // Intentar obtener el token con un timeout
     let timeoutId: NodeJS.Timeout | null = null
@@ -92,13 +81,6 @@ export async function POST(request: NextRequest) {
 
     const tokenData = await response.json()
 
-    /*
-    console.log("Token obtenido correctamente de Wikidata:", {
-      access_token: tokenData.access_token ? tokenData.access_token.substring(0, 10) + "..." : "no token",
-      token_type: tokenData.token_type,
-      expires_in: tokenData.expires_in,
-    })
-    */
 
     return NextResponse.json(tokenData)
   } catch (error: any) {
