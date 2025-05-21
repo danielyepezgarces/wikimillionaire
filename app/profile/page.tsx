@@ -1,4 +1,5 @@
 "use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, User, Award, Trophy, Star, Gamepad, Diamond } from "lucide-react"
@@ -16,29 +17,33 @@ export default function ProfilePage() {
   const { user } = useAuth()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [isClient, setIsClient] = useState(false)
+  const [hasFetchedStats, setHasFetchedStats] = useState(false)
 
   // Verificar si estamos en el cliente
   useEffect(() => {
     setIsClient(true)
+  }, [])
 
-    // Si hay un usuario, cargar sus estadísticas
-    if (user) {
-      fetchStats(user.id)
-    }
-  }, [user])
-
-  // Función para cargar estadísticas
-  const fetchStats = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/stats?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
+  // Cargar estadísticas solo una vez cuando hay usuario
+  useEffect(() => {
+    if (user && !hasFetchedStats) {
+      const fetchStats = async () => {
+        try {
+          const response = await fetch(`/api/stats?userId=${user.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            setStats(data)
+          }
+        } catch (error) {
+          console.error("Error al cargar estadísticas:", error)
+        } finally {
+          setHasFetchedStats(true)
+        }
       }
-    } catch (error) {
-      console.error("Error al cargar estadísticas:", error)
+
+      fetchStats()
     }
-  }
+  }, [user, hasFetchedStats])
 
   // Función para obtener el icono de un logro
   const getAchievementIcon = (iconName: string) => {
