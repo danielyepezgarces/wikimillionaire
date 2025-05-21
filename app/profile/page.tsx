@@ -29,7 +29,7 @@ export default function ProfilePage() {
     if (user && !hasFetchedStats) {
       const fetchStats = async () => {
         try {
-          const response = await fetch(`/api/stats?userId=${user.id}`)
+          const response = await fetch(`/api/stats?userId=${user.username}`)
           if (response.ok) {
             const data = await response.json()
             setStats(data)
