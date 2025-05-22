@@ -31,7 +31,6 @@ export type RankingResetInfo = {
 // Tipo para las entradas del leaderboard
 export type LeaderboardEntry = {
   rank: number
-  userId: string
   username: string
   avatarUrl: string | null
   score: number
@@ -40,18 +39,18 @@ export type LeaderboardEntry = {
 }
 
 // Función para guardar una puntuación
-export async function saveScore(userId: string, score: number) {
+export async function saveScore(username: string, score: number) {
   try {
     // Insertar la puntuación en la base de datos
     const result = await query(
-      `INSERT INTO scores (user_id, score, created_at) 
+      `INSERT INTO scores (username, score, created_at) 
        VALUES ($1, $2, NOW()) 
        RETURNING id, score, created_at`,
-      [userId, score],
+      [username, score],
     )
 
     // Verificar si se ha desbloqueado algún logro
-    await checkAchievements(userId, score)
+    await checkAchievements(username, score)
 
     return result[0]
   } catch (error) {
@@ -122,19 +121,18 @@ async function getLeaderboardFromDB(
     timeFilter = `WHERE s.created_at >= '${monthStart}'`
   }
 
-  // Modificado para sumar las puntuaciones por usuario en el período
+  // Consulta simplificada usando solo username
   const result = await query(
     `SELECT 
-      u.id as user_id, 
       u.username, 
       u.avatar_url, 
       SUM(s.score) as total_score, 
       COUNT(s.id) as games_played,
       MAX(s.created_at) as last_played
      FROM scores s
-     JOIN users u ON s.user_id = u.id
+     JOIN users u ON s.username = u.username
      ${timeFilter}
-     GROUP BY u.id, u.username, u.avatar_url
+     GROUP BY u.username, u.avatar_url
      ORDER BY total_score DESC, games_played DESC
      LIMIT $1`,
     [limit],
@@ -142,7 +140,6 @@ async function getLeaderboardFromDB(
 
   return result.map((row, index) => ({
     rank: index + 1,
-    userId: row.user_id,
     username: row.username,
     avatarUrl: row.avatar_url,
     score: Number.parseInt(row.total_score) || 0,
@@ -217,7 +214,6 @@ function getLeaderboardFromLocalStorage(
       .slice(0, limit)
       .map((entry, index) => ({
         rank: index + 1,
-        userId: `local_${entry.username}`,
         username: entry.username,
         avatarUrl: null,
         score: entry.totalScore,
@@ -282,7 +278,7 @@ export function getRankingResetInfo(): RankingResetInfo[] {
 }
 
 // Función para obtener las estadísticas de un usuario
-export async function getUserStats(userId: string): Promise<UserStats> {
+export async function getUserStats(username: string): Promise<UserStats> {
   try {
     // Obtener estadísticas básicas
     const statsResult = await query(
@@ -293,26 +289,26 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         AVG(score) as average_score,
         MAX(created_at) as last_played
        FROM scores
-       WHERE user_id = $1`,
-      [userId],
+       WHERE username = $1`,
+      [username],
     )
 
     // Obtener posición en el ranking
     const rankResult = await query(
       `SELECT COUNT(*) as rank
        FROM (
-         SELECT user_id, SUM(score) as total_score
+         SELECT username, SUM(score) as total_score
          FROM scores
-         GROUP BY user_id
+         GROUP BY username
          HAVING SUM(score) > (
-           SELECT SUM(score) FROM scores WHERE user_id = $1
+           SELECT SUM(score) FROM scores WHERE username = $1
          )
        ) as better_scores`,
-      [userId],
+      [username],
     )
 
     // Obtener logros
-    const achievements = await getUserAchievements(userId)
+    const achievements = await getUserAchievements(username)
 
     // Formatear los resultados
     const stats = statsResult[0]
@@ -341,7 +337,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 }
 
 // Función para obtener los logros de un usuario
-async function getUserAchievements(userId: string): Promise<Achievement[]> {
+async function getUserAchievements(username: string): Promise<Achievement[]> {
   try {
     // Verificar si existe la tabla de logros
     const tableExists = await query(
@@ -357,7 +353,7 @@ async function getUserAchievements(userId: string): Promise<Achievement[]> {
       await query(
         `CREATE TABLE achievements (
            id SERIAL PRIMARY KEY,
-           user_id INTEGER REFERENCES users(id),
+           username VARCHAR(255) NOT NULL,
            achievement_id VARCHAR(50) NOT NULL,
            unlocked_at TIMESTAMP DEFAULT NOW()
          )`,
@@ -369,8 +365,8 @@ async function getUserAchievements(userId: string): Promise<Achievement[]> {
     const unlockedAchievements = await query(
       `SELECT achievement_id, unlocked_at
        FROM achievements
-       WHERE user_id = $1`,
-      [userId],
+       WHERE username = $1`,
+      [username],
     )
 
     // Definir todos los logros disponibles
@@ -434,29 +430,28 @@ async function getUserAchievements(userId: string): Promise<Achievement[]> {
 }
 
 // Función para verificar y desbloquear logros
-async function checkAchievements(userId: string, score: number) {
+async function checkAchievements(username: string, score: number) {
   try {
     // Obtener estadísticas actuales
-    const stats = await getUserStats(userId)
+    const stats = await getUserStats(username)
 
     // Verificar logros basados en puntuación
     if (score >= 1000000) {
-      await unlockAchievement(userId, "millionaire")
+      await unlockAchievement(username, "millionaire")
     } else if (score >= 100000) {
-      await unlockAchievement(userId, "score_100000")
+      await unlockAchievement(username, "score_100000")
     } else if (score >= 10000) {
-      await unlockAchievement(userId, "score_10000")
+      await unlockAchievement(username, "score_10000")
     }
 
     // Verificar logro de primer juego
     if (stats.gamesPlayed === 0) {
-      await unlockAchievement(userId, "first_game")
+      await unlockAchievement(username, "first_game")
     }
 
     // Verificar logro de 10 partidas
     if (stats.gamesPlayed === 9) {
-      // Esta será la décima partida
-      await unlockAchievement(userId, "games_10")
+      await unlockAchievement(username, "games_10")
     }
 
     // Verificar logro de top 10
@@ -465,7 +460,7 @@ async function checkAchievements(userId: string, score: number) {
       const wouldBeInTop10 = leaderboard.length < 10 || score > leaderboard[leaderboard.length - 1].score
 
       if (wouldBeInTop10) {
-        await unlockAchievement(userId, "top_10")
+        await unlockAchievement(username, "top_10")
       }
     }
   } catch (error) {
@@ -474,22 +469,21 @@ async function checkAchievements(userId: string, score: number) {
 }
 
 // Función para desbloquear un logro
-async function unlockAchievement(userId: string, achievementId: string) {
+async function unlockAchievement(username: string, achievementId: string) {
   try {
     // Verificar si el logro ya está desbloqueado
-    const existing = await query(`SELECT id FROM achievements WHERE user_id = $1 AND achievement_id = $2`, [
-      userId,
-      achievementId,
-    ])
+    const existing = await query(
+      `SELECT id FROM achievements WHERE username = $1 AND achievement_id = $2`,
+      [username, achievementId]
+    )
 
     // Si no está desbloqueado, desbloquearlo
     if (existing.length === 0) {
       await query(
-        `INSERT INTO achievements (user_id, achievement_id, unlocked_at)
+        `INSERT INTO achievements (username, achievement_id, unlocked_at)
          VALUES ($1, $2, NOW())`,
-        [userId, achievementId],
+        [username, achievementId],
       )
-
     }
   } catch (error) {
     console.error(`Error al desbloquear logro ${achievementId}:`, error)
