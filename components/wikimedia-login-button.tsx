@@ -131,7 +131,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
                 onClick={() => handleNavigation("/settings")}
               >
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Configuración</span>
+                <span>{t.settings.title}</span>
               </button>
             </div>
             <div className="border-t border-purple-700"></div>
