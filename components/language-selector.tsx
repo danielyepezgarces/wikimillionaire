@@ -14,7 +14,6 @@ interface LanguageSelectorProps {
 export function LanguageSelector({ currentLocale, onLocaleChange }: LanguageSelectorProps) {
   const [mounted, setMounted] = useState(false)
 
-  // Evitar problemas de hidratación
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -26,6 +25,12 @@ export function LanguageSelector({ currentLocale, onLocaleChange }: LanguageSele
         <span className="sr-only">Seleccionar idioma</span>
       </Button>
     )
+  }
+
+  // Verificación adicional de tipos
+  if (!Array.isArray(availableLocales)) {
+    console.error("availableLocales no es un array:", availableLocales)
+    return null
   }
 
   return (
