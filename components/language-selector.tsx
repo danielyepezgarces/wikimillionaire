@@ -1,8 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useState } from "react"
 import { Globe } from "lucide-react"
 import { type Locale, availableLocales, getLanguageName } from "@/lib/i18n"
 
@@ -12,54 +10,41 @@ interface LanguageSelectorProps {
 }
 
 export function LanguageSelector({ currentLocale, onLocaleChange }: LanguageSelectorProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-purple-700">
-        <Globe className="h-4 w-4" />
-        <span className="sr-only">Seleccionar idioma</span>
-      </Button>
-    )
-  }
-
-  // Verificación adicional de tipos
-  if (!Array.isArray(availableLocales)) {
-    console.error("availableLocales no es un array:", availableLocales)
-    return null
-  }
+  const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 rounded-full border-purple-700 text-white hover:bg-purple-800/50 hover:text-white"
-        >
-          <Globe className="h-4 w-4" />
-          <span className="sr-only">Seleccionar idioma</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-purple-900 border-purple-700">
-        {availableLocales.map((locale) => (
-          <DropdownMenuItem
-            key={locale}
-            className={`cursor-pointer ${
-              locale === currentLocale
-                ? "bg-yellow-500/20 text-yellow-400"
-                : "text-white hover:bg-purple-800 hover:text-white"
-            }`}
-            onClick={() => onLocaleChange(locale)}
-          >
-            {getLanguageName(locale)}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="relative inline-block">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-purple-700 text-white hover:bg-purple-800/50"
+        aria-label="Seleccionar idioma"
+        aria-expanded={open}
+      >
+        <Globe className="h-4 w-4" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-50 mt-2 w-40 rounded-md bg-purple-900 shadow-lg ring-1 ring-purple-700">
+          <div className="py-1">
+            {availableLocales.map((locale) => (
+              <button
+                key={locale}
+                onClick={() => {
+                  onLocaleChange(locale)
+                  setOpen(false)
+                }}
+                className={`block w-full px-4 py-2 text-left text-sm ${
+                  locale === currentLocale
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : "text-white hover:bg-purple-800"
+                }`}
+              >
+                {getLanguageName(locale)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
