@@ -32,7 +32,7 @@ export async function createUserCookie(userData: {
     wikimedia_id,
     email: email || null,
     avatar_url: email ? getGravatarUrl(email) : null,
-    created_at: now,
+    created_at,
     last_login: now,
   }
 
