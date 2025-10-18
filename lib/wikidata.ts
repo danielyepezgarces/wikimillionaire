@@ -679,7 +679,7 @@ async function generateFlagQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const flagFileName = selectedCountry.flag.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(flagFileName)}`
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
 
   // Generar opciones incorrectas (otros países)
   const incorrectOptions = results
@@ -736,7 +736,7 @@ async function generateArtworkQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const imageFileName = selectedArtwork.image.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imageFileName)}`
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
 
   // Obtener otros artistas para opciones incorrectas
   const otherCreators = results
@@ -981,3 +981,4 @@ function getBackupQuestion(difficulty: string): WikidataQuestion {
 // Exportar la función generateWikidataQuestion para que pueda ser usada por el panel de pruebas
 
 export { generateWikidataQuestion }
+
