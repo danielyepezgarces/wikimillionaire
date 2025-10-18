@@ -5,26 +5,27 @@ export async function POST(request: NextRequest) {
     const { code, codeVerifier } = await request.json()
 
     if (!code || !codeVerifier) {
-      console.error("Faltan parámetros requeridos:", { code: !!code, codeVerifier: !!codeVerifier })
+      console.error("[Token] Missing required parameters:", { code: !!code, codeVerifier: !!codeVerifier })
       return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 })
     }
 
-    console.log("Procesando solicitud de token con código:", code.substring(0, 10) + "...")
-    console.log("CodeVerifier presente:", !!codeVerifier)
+    console.log("[Token] Processing token request with code:", code.substring(0, 10) + "...")
+    console.log("[Token] CodeVerifier present:", !!codeVerifier)
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID
     const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
     const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
     if (!clientId || !clientSecret) {
-      console.error("Faltan variables de entorno para la autenticación")
+      console.error("[Token] Missing environment variables for authentication")
       return NextResponse.json({ error: "Faltan variables de entorno para la autenticación" }, { status: 500 })
     }
 
-    console.log("Usando client_id:", clientId)
-    console.log("Usando redirect_uri:", redirectUri)
+    console.log("[Token] Using client_id:", clientId)
+    console.log("[Token] Using redirect_uri:", redirectUri)
 
-    const tokenUrl = "https://www.wikidata.org/w/rest.php/oauth2/access_token"
+    // Use meta.wikimedia.org for consistency with the authorization endpoint
+    const tokenUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/access_token"
 
     const params = new URLSearchParams()
     params.append("grant_type", "authorization_code")
@@ -33,6 +34,8 @@ export async function POST(request: NextRequest) {
     params.append("client_id", clientId)
     params.append("client_secret", clientSecret)
     params.append("code_verifier", codeVerifier)
+
+    console.log("[Token] Making request to:", tokenUrl)
 
     // Intentar obtener el token con un timeout
     let timeoutId: NodeJS.Timeout | null = null
@@ -60,22 +63,30 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
     }
 
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Error completo al obtener token de Wikidata:", errorText)
+      console.error("[Token] Full error when obtaining token from Wikimedia:", errorText)
 
       // Intentar parsear el error como JSON
       try {
         const errorJson = JSON.parse(errorText)
-        console.error("Error JSON:", errorJson)
+        console.error("[Token] Error JSON:", errorJson)
 
         // Manejar errores específicos
-        if (errorJson.error === "invalid_grant") {
+        if (errorJson.error === "invalid_grant" || errorJson.hint?.includes("revoked")) {
           return NextResponse.json(
             {
               error:
-                "El código de autorización ha expirado o es inválido. Por favor, intenta iniciar sesión nuevamente.",
+                "El código de autorización ha expirado o ya fue usado. Por favor, intenta iniciar sesión nuevamente.",
+            },
+            { status: 400 },
+          )
+        }
+
+        if (errorJson.error === "invalid_request") {
+          return NextResponse.json(
+            {
+              error: "Solicitud inválida. Por favor, intenta iniciar sesión nuevamente.",
             },
             { status: 400 },
           )
@@ -97,10 +108,11 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = await response.json()
+    console.log("[Token] Token obtained successfully")
 
     return NextResponse.json(tokenData)
   } catch (error: any) {
-    console.error("Error en el endpoint de token:", error)
+    console.error("[Token] Error in token endpoint:", error)
     return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 })
   }
 }

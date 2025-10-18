@@ -3,7 +3,6 @@ import crypto from "crypto"
 
 export async function GET(request: NextRequest) {
   try {
-
     // Generar state y code verifier aleatorios
     const state = crypto.randomBytes(16).toString("hex")
     const codeVerifier = crypto.randomBytes(64).toString("hex")
@@ -21,9 +20,12 @@ export async function GET(request: NextRequest) {
     const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
     if (!clientId || !redirectUri) {
-      console.error("Falta configuración: clientId o redirectUri")
+      console.error("[Wikimedia] Missing configuration: clientId or redirectUri")
       return NextResponse.json({ error: "Configuración incompleta" }, { status: 500 })
     }
+
+    console.log("[Wikimedia] Starting OAuth flow with client_id:", clientId)
+    console.log("[Wikimedia] Using redirect_uri:", redirectUri)
 
     // Leer parámetro returnTo para redirigir después del login
     const { searchParams } = new URL(request.url)
@@ -32,9 +34,10 @@ export async function GET(request: NextRequest) {
     // Guardar state, codeVerifier y returnTo en cookie segura
     const cookieValue = JSON.stringify({ state, codeVerifier, returnTo })
 
-    // Construir URL de autorización OAuth2 para Wikidata
+    // Construir URL de autorización OAuth2 para Meta Wikimedia
+    // Using meta.wikimedia.org for consistency
     const authUrl =
-      `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
+      `https://meta.wikimedia.org/w/rest.php/oauth2/authorize?` +
       `client_id=${encodeURIComponent(clientId)}` +
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
@@ -42,23 +45,24 @@ export async function GET(request: NextRequest) {
       `&code_challenge=${encodeURIComponent(codeChallenge)}` +
       `&code_challenge_method=S256`
 
+    console.log("[Wikimedia] Redirecting to authorization URL")
 
     // Crear una página HTML que almacene el estado en localStorage y luego redirija
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Redirigiendo a Wikidata...</title>
+        <title>Redirigiendo a Wikimedia...</title>
         <script>
           // Almacenar el estado en localStorage como fallback
           localStorage.setItem('wikimedia_auth_state', '${cookieValue.replace(/'/g, "\\'")}');
           
-          // Redirigir a Wikidata
+          // Redirigir a Wikimedia
           window.location.href = "${authUrl}";
         </script>
       </head>
       <body>
-        <p>Redirigiendo a Wikidata...</p>
+        <p>Redirigiendo a Wikimedia...</p>
       </body>
       </html>
     `
@@ -81,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error: any) {
-    console.error("Error iniciando autenticación directa:", error)
+    console.error("[Wikimedia] Error initiating authentication:", error)
     return NextResponse.json({ error: "Error iniciando autenticación" }, { status: 500 })
   }
 }
