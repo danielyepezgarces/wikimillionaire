@@ -192,12 +192,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const hashBase64 = btoa(String.fromCharCode(...hashArray))
       const codeChallenge = hashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
 
-      // Construir la URL de autorización
-      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // ID de cliente registrado en Wikidata
+      // Construir la URL de autorización usando meta.wikimedia.org para consistencia
+      const clientId = "cd1155b5217d823cec353e1e7b5576a1" // ID de cliente registrado en Wikimedia
       const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback")
 
       const authUrl =
-        `https://www.wikidata.org/w/rest.php/oauth2/authorize?` +
+        `https://meta.wikimedia.org/w/rest.php/oauth2/authorize?` +
         `client_id=${clientId}` +
         `&response_type=code` +
         `&redirect_uri=${redirectUri}` +

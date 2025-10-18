@@ -1,4 +1,4 @@
-import { query } from "@/lib/supabase"
+import { query } from "@/lib/db"
 
 // Tipo para las estadísticas del usuario
 export type UserStats = {
@@ -31,6 +31,7 @@ export type RankingResetInfo = {
 // Tipo para las entradas del leaderboard
 export type LeaderboardEntry = {
   rank: number
+  userId?: string
   username: string
   avatarUrl: string | null
   score: number
@@ -140,6 +141,7 @@ async function getLeaderboardFromDB(
 
   return result.map((row, index) => ({
     rank: index + 1,
+    userId: row.username, // Using username as userId since that's the key
     username: row.username,
     avatarUrl: row.avatar_url,
     score: Number.parseInt(row.total_score) || 0,
@@ -214,6 +216,7 @@ function getLeaderboardFromLocalStorage(
       .slice(0, limit)
       .map((entry, index) => ({
         rank: index + 1,
+        userId: entry.username, // Using username as userId
         username: entry.username,
         avatarUrl: null,
         score: entry.totalScore,
@@ -455,7 +458,7 @@ async function checkAchievements(username: string, score: number) {
     }
 
     // Verificar logro de top 10
-    if (stats.rank > 10) {
+    if (stats.rank && stats.rank > 10) {
       const leaderboard = await getLeaderboard("all", 10)
       const wouldBeInTop10 = leaderboard.length < 10 || score > leaderboard[leaderboard.length - 1].score
 

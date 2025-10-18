@@ -45,6 +45,7 @@ function CallbackContent() {
           return
         }
 
+        setStatus("Verificando estado de autenticación...")
 
         // Obtener el estado y codeVerifier de localStorage
         const savedState = localStorage.getItem("wikimillionaire_oauth_state")
@@ -76,9 +77,10 @@ function CallbackContent() {
           }
         }
 
-        setStatus("Procesando autenticación...")
+        setStatus("Intercambiando código de autorización...")
 
-        // Llamar a la función login del contexto
+        // Llamar a la función login del contexto SOLO UNA VEZ
+        // Esta función se encargará de intercambiar el código por el token
         await login(code, codeVerifier)
 
         // Limpiar localStorage después de un login exitoso
