@@ -4,6 +4,7 @@ export type WikidataQuestion = {
   options: string[]
   correctAnswer: string
   id?: string // Identificador opcional para evitar repeticiones
+  image?: string // URL opcional de imagen desde Wikimedia Commons
 }
 
 // Función principal para obtener una pregunta aleatoria de Wikidata
@@ -80,7 +81,7 @@ async function generateWikidataQuestion(difficulty: string): Promise<WikidataQue
       case "birthdate":
         return await generateBirthdateQuestion()
       case "population":
-        return await generatePopulationQuestion()
+        return await generatePopulationQuestion(difficulty)
       case "area":
         return await generateAreaQuestion()
       case "invention":
@@ -91,6 +92,12 @@ async function generateWikidataQuestion(difficulty: string): Promise<WikidataQue
         return await generateAuthorQuestion()
       case "mountain":
         return await generateMountainQuestion()
+      case "flag":
+        return await generateFlagQuestion()
+      case "artwork":
+        return await generateArtworkQuestion()
+      case "landmark":
+        return await generateLandmarkQuestion()
       default:
         return await generateCapitalQuestion() // Por defecto, pregunta sobre capitales
     }
@@ -126,11 +133,11 @@ async function generateWikidataQuestion(difficulty: string): Promise<WikidataQue
 function getQuestionTypesByDifficulty(difficulty: string): string[] {
   switch (difficulty) {
     case "easy":
-      return ["capital", "population"] // Eliminado "birthdate" que causaba problemas
+      return ["capital", "author", "element", "flag", "artwork"]
     case "medium":
-      return ["area", "element", "author"]
+      return ["area", "mountain", "invention", "birthdate", "landmark"]
     case "hard":
-      return ["element", "mountain", "invention"]
+      return ["population", "invention", "mountain", "element"]
     default:
       return ["capital"]
   }
@@ -247,7 +254,7 @@ async function generateBirthdateQuestion(): Promise<WikidataQuestion> {
 }
 
 // Función para generar una pregunta sobre población de países
-async function generatePopulationQuestion(): Promise<WikidataQuestion> {
+async function generatePopulationQuestion(difficulty: string = "hard"): Promise<WikidataQuestion> {
   // Consulta SPARQL simplificada
   const sparqlQuery = `
     SELECT ?country ?countryLabel ?population WHERE {
@@ -278,9 +285,10 @@ async function generatePopulationQuestion(): Promise<WikidataQuestion> {
   // Crear la pregunta
   const question = `¿Cuál es aproximadamente la población de ${selectedCountry.countryLabel.value}?`
 
-  // Formatear la población correcta (redondeada a millones)
+  // Formatear la población correcta con redondeo basado en dificultad
   const population = Number.parseInt(selectedCountry.population.value)
-  const roundedPopulation = Math.round(population / 1000000) * 1000000
+  const difficultyFactor = difficulty === "easy" ? 10000000 : 1000000
+  const roundedPopulation = Math.round(population / difficultyFactor) * difficultyFactor
   const correctAnswer = formatPopulation(roundedPopulation)
 
   // Generar opciones incorrectas (poblaciones diferentes)
@@ -633,6 +641,186 @@ async function generateMountainQuestion(): Promise<WikidataQuestion> {
       correctAnswer,
       id: `mountain-country-${selectedMountain.mountain.value.split("/").pop()}`,
     }
+  }
+}
+
+// Función para generar una pregunta sobre banderas de países
+async function generateFlagQuestion(): Promise<WikidataQuestion> {
+  // Consulta SPARQL simplificada
+  const sparqlQuery = `
+    SELECT ?country ?countryLabel ?flag WHERE {
+      ?country wdt:P31 wd:Q6256 .      # Instancia de país
+      ?country wdt:P41 ?flag .         # Imagen de bandera
+      
+      # Filtrar para obtener solo países importantes
+      ?country wikibase:sitelinks ?sitelinks .
+      FILTER(?sitelinks > 50)
+      
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+    }
+    ORDER BY RAND()
+    LIMIT 15
+  `
+
+  const data = await fetchFromWikidata(sparqlQuery)
+  const results = data.results.bindings
+
+  if (!results || results.length === 0) {
+    throw new Error("No se encontraron datos para la pregunta sobre banderas")
+  }
+
+  // Seleccionar un país aleatorio para la pregunta
+  const randomIndex = Math.floor(Math.random() * Math.min(results.length, 10))
+  const selectedCountry = results[randomIndex]
+
+  // Crear la pregunta
+  const question = "¿A qué país pertenece esta bandera?"
+  const correctAnswer = selectedCountry.countryLabel.value
+
+  // Obtener el nombre de archivo de la imagen
+  const flagFileName = selectedCountry.flag.value
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(flagFileName)}`
+
+  // Generar opciones incorrectas (otros países)
+  const incorrectOptions = results
+    .filter((result) => result.countryLabel.value !== correctAnswer)
+    .map((result) => result.countryLabel.value)
+    .slice(0, 3)
+
+  // Mezclar las opciones
+  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
+
+  return {
+    question,
+    options,
+    correctAnswer,
+    image: imageUrl,
+    id: `flag-${selectedCountry.country.value.split("/").pop()}`,
+  }
+}
+
+// Función para generar una pregunta sobre obras de arte
+async function generateArtworkQuestion(): Promise<WikidataQuestion> {
+  // Consulta SPARQL simplificada
+  const sparqlQuery = `
+    SELECT ?artwork ?artworkLabel ?creator ?creatorLabel ?image WHERE {
+      ?artwork wdt:P31 wd:Q3305213 .   # Instancia de pintura
+      ?artwork wdt:P170 ?creator .     # Creador
+      ?artwork wdt:P18 ?image .        # Imagen
+      ?creator wdt:P31 wd:Q5 .         # Creador es humano
+      
+      # Filtrar para obtener solo obras conocidas
+      ?artwork wikibase:sitelinks ?sitelinks .
+      FILTER(?sitelinks > 20)
+      
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+    }
+    ORDER BY RAND()
+    LIMIT 10
+  `
+
+  const data = await fetchFromWikidata(sparqlQuery)
+  const results = data.results.bindings
+
+  if (!results || results.length === 0) {
+    throw new Error("No se encontraron datos para la pregunta sobre obras de arte")
+  }
+
+  // Seleccionar una obra aleatoria para la pregunta
+  const randomIndex = Math.floor(Math.random() * results.length)
+  const selectedArtwork = results[randomIndex]
+
+  // Crear la pregunta
+  const question = "¿Quién pintó esta obra?"
+  const correctAnswer = selectedArtwork.creatorLabel.value
+
+  // Obtener el nombre de archivo de la imagen
+  const imageFileName = selectedArtwork.image.value
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imageFileName)}`
+
+  // Obtener otros artistas para opciones incorrectas
+  const otherCreators = results
+    .filter((result) => result.creatorLabel.value !== correctAnswer)
+    .map((result) => result.creatorLabel.value)
+
+  // Eliminar duplicados
+  const uniqueCreators = [...new Set(otherCreators)]
+
+  // Seleccionar 3 artistas aleatorios para opciones incorrectas
+  const incorrectOptions = uniqueCreators.sort(() => Math.random() - 0.5).slice(0, 3)
+
+  // Mezclar las opciones
+  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
+
+  return {
+    question,
+    options,
+    correctAnswer,
+    image: imageUrl,
+    id: `artwork-${selectedArtwork.artwork.value.split("/").pop()}`,
+  }
+}
+
+// Función para generar una pregunta sobre monumentos/lugares emblemáticos
+async function generateLandmarkQuestion(): Promise<WikidataQuestion> {
+  // Consulta SPARQL simplificada
+  const sparqlQuery = `
+    SELECT ?landmark ?landmarkLabel ?country ?countryLabel ?image WHERE {
+      # Monumentos, edificios históricos o lugares emblemáticos
+      VALUES ?type { wd:Q4989906 wd:Q35112127 wd:Q570116 }
+      ?landmark wdt:P31 ?type .
+      ?landmark wdt:P17 ?country .     # País
+      ?landmark wdt:P18 ?image .       # Imagen
+      
+      # Filtrar para obtener solo lugares conocidos
+      ?landmark wikibase:sitelinks ?sitelinks .
+      FILTER(?sitelinks > 30)
+      
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+    }
+    ORDER BY RAND()
+    LIMIT 10
+  `
+
+  const data = await fetchFromWikidata(sparqlQuery)
+  const results = data.results.bindings
+
+  if (!results || results.length === 0) {
+    throw new Error("No se encontraron datos para la pregunta sobre monumentos")
+  }
+
+  // Seleccionar un monumento aleatorio para la pregunta
+  const randomIndex = Math.floor(Math.random() * results.length)
+  const selectedLandmark = results[randomIndex]
+
+  // Crear la pregunta
+  const question = "¿En qué país se encuentra este lugar?"
+  const correctAnswer = selectedLandmark.countryLabel.value
+
+  // Obtener el nombre de archivo de la imagen
+  const imageFileName = selectedLandmark.image.value
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imageFileName)}`
+
+  // Obtener otros países para opciones incorrectas
+  const otherCountries = results
+    .filter((result) => result.countryLabel.value !== correctAnswer)
+    .map((result) => result.countryLabel.value)
+
+  // Eliminar duplicados
+  const uniqueCountries = [...new Set(otherCountries)]
+
+  // Seleccionar 3 países aleatorios para opciones incorrectas
+  const incorrectOptions = uniqueCountries.sort(() => Math.random() - 0.5).slice(0, 3)
+
+  // Mezclar las opciones
+  const options = [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5)
+
+  return {
+    question,
+    options,
+    correctAnswer,
+    image: imageUrl,
+    id: `landmark-${selectedLandmark.landmark.value.split("/").pop()}`,
   }
 }
 
