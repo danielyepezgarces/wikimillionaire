@@ -524,6 +524,15 @@ export default function PlayPage() {
               <CardHeader>
                 <CardTitle className="text-xl">{currentQuestion.question}</CardTitle>
               </CardHeader>
+              {currentQuestion.image && (
+                <CardContent className="flex justify-center">
+                  <img
+                    src={currentQuestion.image}
+                    alt="Pregunta visual"
+                    className="max-h-64 w-auto rounded-lg border-2 border-purple-700 object-contain"
+                  />
+                </CardContent>
+              )}
             </Card>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
