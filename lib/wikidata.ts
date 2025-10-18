@@ -415,7 +415,7 @@ async function generateInventionQuestion(): Promise<WikidataQuestion> {
     .map((result) => result.inventorLabel.value)
 
   // Eliminar duplicados
-  const uniqueInventors = [...new Set(otherInventors)]
+  const uniqueInventors = Array.from(new Set(otherInventors))
 
   // Seleccionar 3 inventores aleatorios para opciones incorrectas
   const incorrectOptions = uniqueInventors.sort(() => Math.random() - 0.5).slice(0, 3)
@@ -545,7 +545,7 @@ async function generateAuthorQuestion(): Promise<WikidataQuestion> {
     .map((result) => result.authorLabel.value)
 
   // Eliminar duplicados
-  const uniqueAuthors = [...new Set(otherAuthors)]
+  const uniqueAuthors = Array.from(new Set(otherAuthors))
 
   // Seleccionar 3 autores aleatorios para opciones incorrectas
   const incorrectOptions = uniqueAuthors.sort(() => Math.random() - 0.5).slice(0, 3)
@@ -627,7 +627,7 @@ async function generateMountainQuestion(): Promise<WikidataQuestion> {
       .map((result) => result.countryLabel.value)
 
     // Eliminar duplicados
-    const uniqueCountries = [...new Set(otherCountries)]
+    const uniqueCountries = Array.from(new Set(otherCountries))
 
     // Seleccionar 3 países aleatorios para opciones incorrectas
     const incorrectOptions = uniqueCountries.sort(() => Math.random() - 0.5).slice(0, 3)
@@ -744,7 +744,7 @@ async function generateArtworkQuestion(): Promise<WikidataQuestion> {
     .map((result) => result.creatorLabel.value)
 
   // Eliminar duplicados
-  const uniqueCreators = [...new Set(otherCreators)]
+  const uniqueCreators = Array.from(new Set(otherCreators))
 
   // Seleccionar 3 artistas aleatorios para opciones incorrectas
   const incorrectOptions = uniqueCreators.sort(() => Math.random() - 0.5).slice(0, 3)
@@ -807,7 +807,7 @@ async function generateLandmarkQuestion(): Promise<WikidataQuestion> {
     .map((result) => result.countryLabel.value)
 
   // Eliminar duplicados
-  const uniqueCountries = [...new Set(otherCountries)]
+  const uniqueCountries = Array.from(new Set(otherCountries))
 
   // Seleccionar 3 países aleatorios para opciones incorrectas
   const incorrectOptions = uniqueCountries.sort(() => Math.random() - 0.5).slice(0, 3)
