@@ -42,6 +42,7 @@ export default function PlayPage() {
   const [answerAnimation, setAnswerAnimation] = useState<"none" | "correct" | "incorrect">("none")
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [timerPaused, setTimerPaused] = useState(false)
 
   useEffect(() => {
     // Si el usuario está autenticado, usar su nombre de usuario
@@ -59,16 +60,16 @@ export default function PlayPage() {
   useEffect(() => {
     let timer: NodeJS.Timeout
 
-    if (gameState === "playing" && timeLeft > 0 && !selectedAnswer) {
+    if (gameState === "playing" && timeLeft > 0 && !selectedAnswer && !timerPaused) {
       timer = setTimeout(() => {
         setTimeLeft(timeLeft - 1)
       }, 1000)
-    } else if (timeLeft === 0 && !selectedAnswer) {
+    } else if (timeLeft === 0 && !selectedAnswer && !timerPaused) {
       handleGameOver()
     }
 
     return () => clearTimeout(timer)
-  }, [timeLeft, gameState, selectedAnswer])
+  }, [timeLeft, gameState, selectedAnswer, timerPaused])
 
   const startGame = async () => {
     if (!username.trim()) {
@@ -102,6 +103,7 @@ export default function PlayPage() {
     setSelectedAnswer(null)
     setCorrectAnswer(null)
     setTimeLeft(30)
+    setTimerPaused(true) // Pause timer until content is ready
     setEliminatedOptions([])
     setAnswerAnimation("none")
     setLoadError(null)
@@ -109,6 +111,22 @@ export default function PlayPage() {
     try {
       const question = await getRandomQuestion(level)
       setCurrentQuestion(question)
+      
+      // If question has an image, wait for it to load before starting timer
+      if (question.image) {
+        const img = new Image()
+        img.onload = () => {
+          setTimerPaused(false) // Start timer once image is loaded
+        }
+        img.onerror = () => {
+          // If image fails to load, start timer anyway
+          setTimerPaused(false)
+        }
+        img.src = question.image
+      } else {
+        // No image, start timer immediately
+        setTimerPaused(false)
+      }
     } catch (error) {
       console.error("Error loading question:", error)
 
@@ -130,6 +148,7 @@ export default function PlayPage() {
         description: t.general.error,
         variant: "destructive",
       })
+      setTimerPaused(false) // Unpause timer even on error
     } finally {
       setLoading(false)
     }
