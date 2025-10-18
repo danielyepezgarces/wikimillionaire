@@ -7,6 +7,20 @@ export type WikidataQuestion = {
   image?: string // URL opcional de imagen desde Wikimedia Commons
 }
 
+// Función auxiliar para construir URLs de imágenes de Wikimedia Commons
+function getCommonsImageUrl(url: string): string {
+  // Si la URL ya contiene Special:FilePath, devolverla tal cual
+  if (url.includes("Special:FilePath")) {
+    return url
+  }
+  // Si la URL ya es una URL completa de Wikimedia, devolverla tal cual
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url
+  }
+  // En caso contrario, construir la URL con Special:Redirect/file/
+  return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(url)}`
+}
+
 // Función principal para obtener una pregunta aleatoria de Wikidata
 export async function getRandomQuestion(level: number): Promise<WikidataQuestion> {
   // Determinar la dificultad basada en el nivel
@@ -679,7 +693,7 @@ async function generateFlagQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const flagFileName = selectedCountry.flag.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
+  const imageUrl = getCommonsImageUrl(flagFileName)
 
   // Generar opciones incorrectas (otros países)
   const incorrectOptions = results
@@ -736,7 +750,7 @@ async function generateArtworkQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const imageFileName = selectedArtwork.image.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
+  const imageUrl = getCommonsImageUrl(imageFileName)
 
   // Obtener otros artistas para opciones incorrectas
   const otherCreators = results
@@ -799,7 +813,7 @@ async function generateLandmarkQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const imageFileName = selectedLandmark.image.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
+  const imageUrl = getCommonsImageUrl(imageFileName)
 
   // Obtener otros países para opciones incorrectas
   const otherCountries = results
