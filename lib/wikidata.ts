@@ -799,7 +799,7 @@ async function generateLandmarkQuestion(): Promise<WikidataQuestion> {
 
   // Obtener el nombre de archivo de la imagen
   const imageFileName = selectedLandmark.image.value
-  const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(imageFileName)}`
+  const imageUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(imageFileName)}`
 
   // Obtener otros países para opciones incorrectas
   const otherCountries = results
@@ -979,4 +979,5 @@ function getBackupQuestion(difficulty: string): WikidataQuestion {
 }
 
 // Exportar la función generateWikidataQuestion para que pueda ser usada por el panel de pruebas
+
 export { generateWikidataQuestion }
