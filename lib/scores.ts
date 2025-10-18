@@ -1,4 +1,4 @@
-import { query } from "@/lib/supabase"
+import { query } from "@/lib/db"
 
 // Tipo para las estadísticas del usuario
 export type UserStats = {
