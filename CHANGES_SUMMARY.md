@@ -88,6 +88,8 @@ WIKIMEDIA_CLIENT_SECRET=your_client_secret
 WIKIMEDIA_REDIRECT_URI=https://wikimillionaire.vercel.app/auth/callback
 ```
 
+**Note**: The application now supports both `DATABASE_URL` (recommended) and `DB_POSTGRES_URL` (legacy) for database connections. Use `DATABASE_URL` as it's the standard for most platforms including Vercel.
+
 ### 2. Initialize Database
 
 After deployment, run:

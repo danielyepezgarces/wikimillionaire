@@ -4,8 +4,18 @@ import { drizzle } from "drizzle-orm/neon-http"
 // Configurar Neon para usar fetch nativo
 neonConfig.fetchConnectionCache = true
 
+// Obtener la URL de conexión de la base de datos
+// Soporta tanto DATABASE_URL (estándar) como DB_POSTGRES_URL (legacy)
+const databaseUrl = process.env.DATABASE_URL || process.env.DB_POSTGRES_URL
+
+if (!databaseUrl) {
+  throw new Error(
+    "No database connection string was provided. Please set either DATABASE_URL or DB_POSTGRES_URL environment variable."
+  )
+}
+
 // Crear cliente SQL usando la URL de conexión
-const sql = neon(process.env.DB_POSTGRES_URL!)
+const sql = neon(databaseUrl)
 
 // Crear cliente Drizzle
 const db = drizzle(sql)

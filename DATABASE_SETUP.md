@@ -16,6 +16,8 @@ DATABASE_URL=postgresql://[user]:[password]@[host]/[database]?sslmode=require
 
 This URL should point to your NeonDB instance.
 
+**Note:** The application also supports the legacy `DB_POSTGRES_URL` environment variable for backward compatibility, but `DATABASE_URL` is the standard and recommended option, especially for platforms like Vercel.
+
 ### Database Schema
 
 The application uses the following tables:
