@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Obtener información del usuario desde Wikidata
-    const userInfoUrl = "https://www.wikidata.org/w/rest.php/oauth2/resource/profile"
+    // Obtener información del usuario desde Meta Wikimedia (consistencia con el flujo OAuth)
+    const userInfoUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile"
 
 
     // Intentar obtener la información del usuario con un timeout

@@ -121,6 +121,26 @@ export async function initializeDatabase() {
       )
     `)
 
+    // Crear tabla de scores si no existe
+    await query(`
+      CREATE TABLE IF NOT EXISTS scores (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        score INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    // Crear índices para optimizar consultas
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_scores_username ON scores(username)
+    `)
+
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_scores_created_at ON scores(created_at)
+    `)
+
+    console.log("Database initialized successfully")
   } catch (error) {
     console.error("Error al inicializar la base de datos:", error)
     throw error
