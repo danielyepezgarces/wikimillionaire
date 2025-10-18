@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/neon-http"
 neonConfig.fetchConnectionCache = true
 
 // Crear cliente SQL usando la URL de conexión
-const sql = neon(process.env.DATABASE_URL!)
+const sql = neon(process.env.DB_POSTGRES_URL!)
 
 // Crear cliente Drizzle
 const db = drizzle(sql)
