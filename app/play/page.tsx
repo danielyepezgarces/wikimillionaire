@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -68,7 +68,7 @@ export default function PlayPage() {
     }
 
     return () => clearTimeout(timer)
-  }, [timeLeft, gameState, selectedAnswer, timerPaused])
+  }, [timeLeft, gameState, selectedAnswer, timerPaused, handleGameOver])
 
   const startGame = async () => {
     if (!username.trim()) {
@@ -211,7 +211,7 @@ export default function PlayPage() {
     }
   }
 
-  const handleGameOver = async () => {
+  const handleGameOver = useCallback(async () => {
     const finalScore = PRIZE_LEVELS[level > 0 ? level - 1 : 0]
 
     // Save score to database via API
@@ -224,9 +224,9 @@ export default function PlayPage() {
     }
 
     setGameState("finished")
-  }
+  }, [level, username])
 
-  const handleGameWin = async () => {
+  const handleGameWin = useCallback(async () => {
     const finalScore = PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
 
     // Save score to database via API
@@ -239,7 +239,7 @@ export default function PlayPage() {
     }
 
     setGameState("finished")
-  }
+  }, [username])
 
   // Función para guardar puntuación en localStorage (fallback)
   const saveScoreToLocalStorage = async (username: string, score: number) => {
