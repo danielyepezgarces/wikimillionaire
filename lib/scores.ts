@@ -43,11 +43,16 @@ export type LeaderboardEntry = {
 export async function saveScore(username: string, score: number) {
   try {
     // Insertar la puntuación en la base de datos
-    const result = await query(
+    await query(
       `INSERT INTO scores (username, score, created_at) 
-       VALUES ($1, $2, NOW()) 
-       RETURNING id, score, created_at`,
+       VALUES (?, ?, NOW())`,
       [username, score],
+    )
+
+    // Get the inserted score
+    const result = await query(
+      `SELECT id, score, created_at FROM scores WHERE username = ? ORDER BY id DESC LIMIT 1`,
+      [username],
     )
 
     // Verificar si se ha desbloqueado algún logro
@@ -342,23 +347,22 @@ export async function getUserStats(username: string): Promise<UserStats> {
 // Función para obtener los logros de un usuario
 async function getUserAchievements(username: string): Promise<Achievement[]> {
   try {
-    // Verificar si existe la tabla de logros
+    // Verificar si existe la tabla de logros (MySQL syntax)
     const tableExists = await query(
-      `SELECT EXISTS (
-         SELECT FROM information_schema.tables 
-         WHERE table_name = 'achievements'
-       ) as exists`,
+      `SELECT COUNT(*) as count
+       FROM information_schema.tables 
+       WHERE table_schema = DATABASE() AND table_name = 'achievements'`,
       [],
     )
 
     // Si no existe la tabla, crearla
-    if (!tableExists[0].exists) {
+    if (tableExists[0].count === 0) {
       await query(
         `CREATE TABLE achievements (
-           id SERIAL PRIMARY KEY,
+           id INT AUTO_INCREMENT PRIMARY KEY,
            username VARCHAR(255) NOT NULL,
            achievement_id VARCHAR(50) NOT NULL,
-           unlocked_at TIMESTAMP DEFAULT NOW()
+           unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
          )`,
         [],
       )
@@ -368,7 +372,7 @@ async function getUserAchievements(username: string): Promise<Achievement[]> {
     const unlockedAchievements = await query(
       `SELECT achievement_id, unlocked_at
        FROM achievements
-       WHERE username = $1`,
+       WHERE username = ?`,
       [username],
     )
 
@@ -476,7 +480,7 @@ async function unlockAchievement(username: string, achievementId: string) {
   try {
     // Verificar si el logro ya está desbloqueado
     const existing = await query(
-      `SELECT id FROM achievements WHERE username = $1 AND achievement_id = $2`,
+      `SELECT id FROM achievements WHERE username = ? AND achievement_id = ?`,
       [username, achievementId]
     )
 
@@ -484,7 +488,7 @@ async function unlockAchievement(username: string, achievementId: string) {
     if (existing.length === 0) {
       await query(
         `INSERT INTO achievements (username, achievement_id, unlocked_at)
-         VALUES ($1, $2, NOW())`,
+         VALUES (?, ?, NOW())`,
         [username, achievementId],
       )
     }
