@@ -1,20 +1,46 @@
-# Database Setup - NeonDB Migration
+# Database Setup - MariaDB Migration
 
-This document describes the NeonDB database setup and migration for WikiMillionaire.
+This document describes the MariaDB database setup and configuration for WikiMillionaire.
 
 ## Database Configuration
 
-The application now uses **NeonDB** as its primary database, configured via the `@neondatabase/serverless` package.
+The application now uses **MariaDB** (or MySQL) as its primary database, configured via the `mysql2` package.
 
 ### Environment Variables Required
 
-Set the following environment variable in your deployment:
+You can configure the database connection in two ways:
+
+#### Option 1: Individual Connection Parameters
+
+Set the following environment variables:
 
 ```
-DATABASE_URL=postgresql://[user]:[password]@[host]/[database]?sslmode=require
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=wikimillionaire
 ```
 
-This URL should point to your NeonDB instance.
+#### Option 2: Connection String
+
+Alternatively, you can use a single connection URL:
+
+```
+DATABASE_URL=mysql://user:password@host:port/database
+```
+
+**Note:** If `DATABASE_URL` is provided, it takes precedence over individual connection parameters.
+
+### Environment Variables File
+
+Create a `.env` file in the project root based on `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your actual database credentials.
 
 ### Database Schema
 
@@ -23,35 +49,36 @@ The application uses the following tables:
 #### 1. Users Table
 ```sql
 CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) NOT NULL,
   wikimedia_id VARCHAR(255) UNIQUE,
   email VARCHAR(255),
   avatar_url TEXT,
-  last_login TIMESTAMP DEFAULT NOW(),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )
 ```
 
 #### 2. Sessions Table
 ```sql
 CREATE TABLE IF NOT EXISTS sessions (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
   token VARCHAR(255) UNIQUE NOT NULL,
   expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 )
 ```
 
 #### 3. Scores Table (for Leaderboard)
 ```sql
 CREATE TABLE IF NOT EXISTS scores (
-  id SERIAL PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) NOT NULL,
-  score INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW()
+  score INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 ```
 
@@ -76,6 +103,39 @@ import { initializeDatabase } from '@/lib/db'
 
 await initializeDatabase()
 ```
+
+## Setting Up MariaDB Locally
+
+### Installation
+
+#### On Ubuntu/Debian:
+```bash
+sudo apt update
+sudo apt install mariadb-server
+sudo mysql_secure_installation
+```
+
+#### On macOS (with Homebrew):
+```bash
+brew install mariadb
+brew services start mariadb
+```
+
+#### On Windows:
+Download and install from [MariaDB Downloads](https://mariadb.org/download/)
+
+### Creating the Database
+
+After installing MariaDB, create the database:
+
+```sql
+CREATE DATABASE wikimillionaire;
+CREATE USER 'your_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON wikimillionaire.* TO 'your_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Then update your `.env` file with the credentials.
 
 ## Leaderboard Functionality
 
@@ -107,11 +167,11 @@ const allTimeLeaderboard = await getLeaderboard('all', 10)
 
 ## Connection Pooling
 
-NeonDB automatically handles connection pooling. The configuration includes:
+MariaDB connection pooling is automatically handled by the `mysql2` package. The configuration includes:
 
-- `fetchConnectionCache: true` - Enables caching for better performance
-- HTTP-based connections via `drizzle-orm/neon-http`
-- Automatic retry logic for transient failures
+- Connection pool management for better performance
+- Automatic reconnection on connection loss
+- Support for both connection string and individual parameters
 
 ## Performance Considerations
 
@@ -124,43 +184,47 @@ NeonDB automatically handles connection pooling. The configuration includes:
 
 To verify the database connection:
 
-1. Ensure `DATABASE_URL` environment variable is set
-2. Run the initialization script
-3. Check application logs for successful connection
+1. Ensure database environment variables are set in `.env`
+2. Start MariaDB service
+3. Run the initialization script: `npm run init-db`
+4. Check application logs for successful connection
 
 ## Migration from Previous Database
 
-If migrating from a previous database:
+If migrating from a PostgreSQL database (NeonDB):
 
-1. Export existing data from old database
-2. Create NeonDB instance
-3. Update `DATABASE_URL` environment variable
+1. Export existing data from PostgreSQL database
+2. Install and configure MariaDB
+3. Update environment variables in `.env` to point to MariaDB
 4. Run `initializeDatabase()` to create schema
-5. Import data using standard PostgreSQL tools or custom migration scripts
+5. Import data using standard MySQL tools or custom migration scripts
+
+**Note:** The application has been updated to use MariaDB-compatible SQL syntax. The query function automatically converts PostgreSQL-style placeholders ($1, $2, etc.) to MySQL-style (?) for backward compatibility.
 
 ## Troubleshooting
 
 ### Connection Issues
 
-- Verify `DATABASE_URL` is correctly set
-- Ensure NeonDB instance is running and accessible
-- Check firewall rules allow connections from your deployment platform
+- Verify database environment variables are correctly set in `.env`
+- Ensure MariaDB service is running
+- Check firewall rules allow connections to MariaDB port (default 3306)
+- Verify database user has proper permissions
 
 ### Schema Issues
 
 - Run `initializeDatabase()` to ensure all tables exist
-- Check database logs in NeonDB dashboard
-- Verify PostgreSQL version compatibility (NeonDB uses PostgreSQL 14+)
+- Check MariaDB logs for error messages
+- Verify MariaDB version is 10.3+ or MySQL 5.7+
 
 ### Performance Issues
 
-- Check query performance in NeonDB dashboard
+- Check query performance using MariaDB's slow query log
 - Verify indexes are created properly
 - Monitor connection pool usage
-- Consider upgrading NeonDB plan if needed
+- Consider optimizing MariaDB configuration
 
 ## Support
 
-For NeonDB-specific issues, consult:
-- [NeonDB Documentation](https://neon.tech/docs)
-- [NeonDB Serverless Package](https://github.com/neondatabase/serverless)
+For MariaDB-specific issues, consult:
+- [MariaDB Documentation](https://mariadb.org/documentation/)
+- [mysql2 Package Documentation](https://github.com/sidorares/node-mysql2)
