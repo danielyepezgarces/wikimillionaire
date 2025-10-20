@@ -1,12 +1,9 @@
 import type React from "react"
 import "@/app/globals.css"
-import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { SessionHandler } from "@/components/session-handler"
 import { AuthDebug } from "@/components/auth-debug"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "WikiMillionaire - Juego de Preguntas con Wikidata",
@@ -21,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <SessionHandler />
