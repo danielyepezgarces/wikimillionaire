@@ -89,18 +89,25 @@ async function getLeaderboardFromDB(
   limit = 10,
 ): Promise<LeaderboardEntry[]> {
   let timeFilter = ""
+  const params: any[] = []
   const now = new Date()
 
   if (period === "daily") {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-    timeFilter = `WHERE s.created_at >= '${today}'`
+    timeFilter = `WHERE s.created_at >= ?`
+    params.push(today)
   } else if (period === "weekly") {
     const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString()
-    timeFilter = `WHERE s.created_at >= '${weekAgo}'`
+    timeFilter = `WHERE s.created_at >= ?`
+    params.push(weekAgo)
   } else if (period === "monthly") {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    timeFilter = `WHERE s.created_at >= '${monthStart}'`
+    timeFilter = `WHERE s.created_at >= ?`
+    params.push(monthStart)
   }
+
+  // Add limit to params
+  params.push(limit)
 
   // Consulta simplificada usando solo username
   const result = await query(
@@ -116,7 +123,7 @@ async function getLeaderboardFromDB(
      GROUP BY u.username, u.avatar_url
      ORDER BY total_score DESC, games_played DESC
      LIMIT ?`,
-    [limit],
+    params,
   )
 
   return result.map((row, index) => ({
