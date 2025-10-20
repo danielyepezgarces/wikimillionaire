@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+import NextAuth, { type NextAuthOptions } from "next-auth"
 import { authConfig } from "./auth.config"
 import { getUserByWikimediaId, createUser, updateUser } from "./lib/db"
 import { getGravatarUrl } from "./lib/gravatar"
@@ -26,17 +26,13 @@ const WikimediaProvider = {
       image: profile.email ? getGravatarUrl(profile.email) : null,
     }
   },
-  style: {
-    logo: "/wikimedia-logo.svg",
-    text: "#000",
-    bg: "#fff",
-  },
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const authOptions: NextAuthOptions = {
   ...authConfig,
-  providers: [WikimediaProvider],
+  providers: [WikimediaProvider as any],
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account, profile }) {
       if (account?.provider === "wikimedia" && profile) {
         try {
@@ -47,15 +43,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             // Update existing user
             await updateUser(dbUser.id.toString(), {
               last_login: new Date(),
-              email: profile.email as string || null,
+              email: (profile.email as string) || null,
               avatar_url: user.image || null,
             })
           } else {
             // Create new user
             dbUser = await createUser({
-              username: profile.username as string,
+              username: (profile as any).username as string,
               wikimedia_id: profile.sub as string,
-              email: profile.email as string || null,
+              email: (profile.email as string) || null,
               avatar_url: user.image || null,
             })
           }
@@ -69,27 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true
     },
-    async session({ session, token }) {
-      if (token.sub) {
-        session.user.id = token.sub
-      }
-      if (token.wikimedia_id) {
-        session.user.wikimedia_id = token.wikimedia_id as string
-      }
-      return session
-    },
-    async jwt({ token, user, account, profile }) {
-      if (user) {
-        token.id = user.id
-      }
-      if (profile?.sub) {
-        token.wikimedia_id = profile.sub
-      }
-      return token
-    },
   },
-  session: {
-    strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  },
-})
+}
+
+export default NextAuth(authOptions)
