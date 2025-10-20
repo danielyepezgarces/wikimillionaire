@@ -115,7 +115,7 @@ async function getLeaderboardFromDB(
      ${timeFilter}
      GROUP BY u.username, u.avatar_url
      ORDER BY total_score DESC, games_played DESC
-     LIMIT $1`,
+     LIMIT ?`,
     [limit],
   )
 
