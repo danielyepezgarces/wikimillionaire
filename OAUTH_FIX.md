@@ -125,9 +125,12 @@ User information is saved in:
 
 ```bash
 WIKIMEDIA_CLIENT_ID=your_client_id
-WIKIMEDIA_CLIENT_SECRET=your_client_secret
+# Note: WIKIMEDIA_CLIENT_SECRET is NOT used when implementing PKCE flow
+# PKCE is for public clients - do not send client_secret with code_verifier
 WIKIMEDIA_REDIRECT_URI=https://wikimillionaire.vercel.app/auth/callback
 ```
+
+**Important**: When using PKCE (Proof Key for Code Exchange), the `client_secret` should **NOT** be sent in the token exchange request. PKCE is designed for public clients that cannot securely store secrets. The `code_verifier` serves as the authentication mechanism instead. Sending both `client_secret` and `code_verifier` will cause a "Client authentication failed" error from Wikimedia.
 
 ### Wikimedia OAuth App Settings
 
@@ -135,8 +138,9 @@ In the Wikimedia OAuth app configuration, ensure:
 
 1. **OAuth 2.0 protocol** is enabled
 2. **Redirect URI** matches exactly: `https://wikimillionaire.vercel.app/auth/callback`
-3. **Client type** is "Public" (for PKCE flow)
+3. **Client type** is "Public" (for PKCE flow) - **CRITICAL**: Public clients use PKCE without client_secret
 4. **Grants** include "authorization_code"
+5. **Do NOT enable "Confidential" client type** - This would require client_secret which conflicts with PKCE
 
 ## Debugging OAuth Issues
 
@@ -174,13 +178,19 @@ All OAuth operations now include prefixed logs:
 
 **Solution**: Clear browser storage and try again
 
-#### "Invalid client"
+#### "Invalid client" or "Client authentication failed"
 
 **Causes**:
-- `WIKIMEDIA_CLIENT_ID` or `WIKIMEDIA_CLIENT_SECRET` is incorrect
+- `WIKIMEDIA_CLIENT_ID` is incorrect
 - OAuth app is not approved by Wikimedia
+- **CRITICAL**: Sending `client_secret` with PKCE flow (code_verifier)
+- OAuth app is configured as "Confidential" instead of "Public"
 
-**Solution**: Verify credentials in Wikimedia OAuth app settings
+**Solution**: 
+- Verify credentials in Wikimedia OAuth app settings
+- **Ensure OAuth app is set to "Public" client type**
+- **Do NOT send client_secret when using PKCE** - this is the most common cause
+- The code_verifier serves as authentication for public clients
 
 ## Testing
 

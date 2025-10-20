@@ -13,10 +13,9 @@ export async function POST(request: NextRequest) {
     console.log("[Token] CodeVerifier present:", !!codeVerifier)
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID
-    const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
     const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
-    if (!clientId || !clientSecret) {
+    if (!clientId) {
       console.error("[Token] Missing environment variables for authentication")
       return NextResponse.json({ error: "Faltan variables de entorno para la autenticación" }, { status: 500 })
     }
@@ -32,7 +31,8 @@ export async function POST(request: NextRequest) {
     params.append("code", code)
     params.append("redirect_uri", redirectUri)
     params.append("client_id", clientId)
-    params.append("client_secret", clientSecret)
+    // When using PKCE (code_verifier), DO NOT send client_secret
+    // PKCE is for public clients and mixing it with client_secret causes "Client authentication failed"
     params.append("code_verifier", codeVerifier)
 
     console.log("[Token] Making request to:", tokenUrl)

@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
 
 
     // Intercambio del código por el token
+    // When using PKCE (code_verifier), DO NOT send client_secret
+    // PKCE is for public clients and mixing it with client_secret causes "Client authentication failed"
     const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
       method: "POST",
       headers: {
@@ -37,7 +39,6 @@ export async function GET(request: NextRequest) {
       },
       body: new URLSearchParams({
         client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
-        client_secret: process.env.WIKIMEDIA_CLIENT_SECRET || "",
         grant_type: "authorization_code",
         code,
         redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback",
