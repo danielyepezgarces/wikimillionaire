@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -56,10 +57,8 @@ export default function LeaderboardPage() {
       }
     }
 
-    if (isClient) {
-      fetchLeaderboard()
-    }
-  }, [activeTab, isClient])
+    fetchLeaderboard()
+  }, [activeTab])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -69,23 +68,21 @@ export default function LeaderboardPage() {
     return resetInfo.find((info) => info.period === activeTab) || resetInfo[0]
   }
 
-  const handleNavigation = (path: string) => {
-    if (isClient) {
-      window.location.href = path
-    }
-  }
-
   if (!isClient) {
-    return null // No renderizar nada en el servidor
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-yellow-500 border-t-transparent"></div>
+      </div>
+    )
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
-          <button onClick={() => handleNavigation("/")} className="text-gray-300 hover:text-white">
+          <Link href="/" className="text-gray-300 hover:text-white">
             <ArrowLeft className="h-6 w-6" />
-          </button>
+          </Link>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white">
               <span className="text-yellow-400">Wiki</span>Millionaire

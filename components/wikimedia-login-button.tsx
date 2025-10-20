@@ -11,7 +11,7 @@ interface WikimediaLoginButtonProps {
 }
 
 export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
-  const { user, loading, refreshUser, logout, getAuthUrl } = useAuth()
+  const { user, loading, logout, login } = useAuth()
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -22,12 +22,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   useEffect(() => {
     setIsClient(true)
     setMounted(true)
-    try {
-      refreshUser()
-    } catch (error) {
-      // Error silencioso
-    }
-  }, [refreshUser])
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -45,10 +40,7 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
   const handleLogin = async () => {
     try {
       setIsLoggingIn(true)
-      const authUrl = await getAuthUrl()
-      if (isClient) {
-        window.location.href = authUrl
-      }
+      await login()
     } catch (error) {
       setIsLoggingIn(false)
     }
@@ -58,9 +50,6 @@ export function WikimediaLoginButton({ t }: WikimediaLoginButtonProps) {
     try {
       setIsLoggingOut(true)
       await logout()
-      if (isClient) {
-        window.location.href = "/"
-      }
     } catch (error) {
       setIsLoggingOut(false)
     }
