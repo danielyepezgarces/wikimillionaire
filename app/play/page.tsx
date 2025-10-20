@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getRandomQuestion } from "@/lib/wikidata"
-import { saveScore } from "@/lib/scores"
 import { ArrowLeft, Award } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSound } from "@/hooks/use-sound"
@@ -190,20 +189,37 @@ export default function PlayPage() {
     }, 1000)
   }
 
+  // Function to save score via API
+  const saveScoreToAPI = async (username: string, score: number) => {
+    try {
+      const response = await fetch("/api/scores", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, score }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save score")
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error("Error saving score via API:", error)
+      throw error
+    }
+  }
+
   const handleGameOver = async () => {
     const finalScore = PRIZE_LEVELS[level > 0 ? level - 1 : 0]
 
-    // Si el usuario está autenticado, guardar la puntuación en Supabase
-    if (user) {
-      try {
-        await saveScore(user.id, finalScore)
-      } catch (error) {
-        console.error("Error saving score to Supabase:", error)
-        // Fallback a localStorage si falla Supabase
-        await saveScoreToLocalStorage(username, finalScore)
-      }
-    } else {
-      // Si no está autenticado, guardar en localStorage
+    // Save score to database via API
+    try {
+      await saveScoreToAPI(username, finalScore)
+    } catch (error) {
+      console.error("Error saving score to database:", error)
+      // Fallback to localStorage if database save fails
       await saveScoreToLocalStorage(username, finalScore)
     }
 
@@ -213,17 +229,12 @@ export default function PlayPage() {
   const handleGameWin = async () => {
     const finalScore = PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
 
-    // Si el usuario está autenticado, guardar la puntuación en Supabase
-    if (user) {
-      try {
-        await saveScore(user.id, finalScore)
-      } catch (error) {
-        console.error("Error saving score to Supabase:", error)
-        // Fallback a localStorage si falla Supabase
-        await saveScoreToLocalStorage(username, finalScore)
-      }
-    } else {
-      // Si no está autenticado, guardar en localStorage
+    // Save score to database via API
+    try {
+      await saveScoreToAPI(username, finalScore)
+    } catch (error) {
+      console.error("Error saving score to database:", error)
+      // Fallback to localStorage if database save fails
       await saveScoreToLocalStorage(username, finalScore)
     }
 

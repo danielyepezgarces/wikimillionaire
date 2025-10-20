@@ -9,7 +9,7 @@ import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import type { UserStats } from "@/lib/scores"
+import type { UserStats } from "@/lib/scores-utils"
 import { Progress } from "@/components/ui/progress"
 
 export default function ProfilePage() {
