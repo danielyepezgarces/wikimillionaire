@@ -56,20 +56,6 @@ export default function PlayPage() {
     }
   }, [user])
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-
-    if (gameState === "playing" && timeLeft > 0 && !selectedAnswer && !timerPaused) {
-      timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1)
-      }, 1000)
-    } else if (timeLeft === 0 && !selectedAnswer && !timerPaused) {
-      handleGameOver()
-    }
-
-    return () => clearTimeout(timer)
-  }, [timeLeft, gameState, selectedAnswer, timerPaused, handleGameOver])
-
   const startGame = async () => {
     if (!username.trim()) {
       toast({
@@ -240,6 +226,21 @@ export default function PlayPage() {
 
     setGameState("finished")
   }, [username])
+
+  // Timer useEffect - must be after handleGameOver definition
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+
+    if (gameState === "playing" && timeLeft > 0 && !selectedAnswer && !timerPaused) {
+      timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1)
+      }, 1000)
+    } else if (timeLeft === 0 && !selectedAnswer && !timerPaused) {
+      handleGameOver()
+    }
+
+    return () => clearTimeout(timer)
+  }, [timeLeft, gameState, selectedAnswer, timerPaused, handleGameOver])
 
   // Función para guardar puntuación en localStorage (fallback)
   const saveScoreToLocalStorage = async (username: string, score: number) => {
