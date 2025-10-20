@@ -1,28 +1,43 @@
-import { neon, neonConfig } from "@neondatabase/serverless"
-import { drizzle } from "drizzle-orm/neon-http"
+import mysql from "mysql2/promise"
 
-// Configurar Neon para usar fetch nativo
-neonConfig.fetchConnectionCache = true
+// Create database connection configuration
+function getDbConfig() {
+  // If DATABASE_URL is provided, use it
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL
+  }
 
-// Crear cliente SQL usando la URL de conexión
-const sql = neon(process.env.DB_POSTGRES_URL!)
+  // Otherwise, construct from individual environment variables
+  return {
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "3306", 10),
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "wikimillionaire",
+  }
+}
 
-// Crear cliente Drizzle
-const db = drizzle(sql)
+// Create connection pool for MariaDB
+const pool = mysql.createPool(getDbConfig())
 
-// Función para ejecutar consultas SQL directas
+// Function to execute SQL queries
 export async function query(text: string, params?: any[]) {
   const start = Date.now()
   try {
-    // Convertir los parámetros a formato de marcador de posición $1, $2, etc.
-    const paramPlaceholders = params?.map((_, i) => `$${i + 1}`).join(", ") || ""
+    // Convert PostgreSQL-style placeholders ($1, $2) to MySQL-style (?)
+    let convertedText = text
+    if (params && params.length > 0) {
+      // Replace $1, $2, etc. with ?
+      for (let i = params.length; i >= 1; i--) {
+        convertedText = convertedText.replace(new RegExp(`\\$${i}\\b`, "g"), "?")
+      }
+    }
 
-    // Ejecutar la consulta
-    const result = await sql(text, params || [])
+    const [rows] = await pool.execute(convertedText, params || [])
 
     const duration = Date.now() - start
 
-    return result
+    return rows as any[]
   } catch (error) {
     console.error("Error al ejecutar consulta", { text, error })
     throw error
@@ -31,13 +46,13 @@ export async function query(text: string, params?: any[]) {
 
 // Función para obtener un usuario por ID
 export async function getUserById(id: string) {
-  const result = await query("SELECT * FROM users WHERE id = $1", [id])
+  const result = await query("SELECT * FROM users WHERE id = ?", [id])
   return result[0] || null
 }
 
 // Función para obtener un usuario por wikimedia_id
 export async function getUserByWikimediaId(wikimediaId: string) {
-  const result = await query("SELECT * FROM users WHERE wikimedia_id = $1", [wikimediaId])
+  const result = await query("SELECT * FROM users WHERE wikimedia_id = ?", [wikimediaId])
   return result[0] || null
 }
 
@@ -50,10 +65,15 @@ export async function createUser(userData: {
 }) {
   const { username, wikimedia_id, email, avatar_url } = userData
 
-  const result = await query(
-    "INSERT INTO users (username, wikimedia_id, email, avatar_url, last_login) VALUES ($1, $2, $3, $4, NOW()) RETURNING *",
+  await query(
+    "INSERT INTO users (username, wikimedia_id, email, avatar_url, last_login) VALUES (?, ?, ?, ?, NOW())",
     [username, wikimedia_id, email || null, avatar_url || null],
   )
+
+  // Get the inserted user
+  const result = await query("SELECT * FROM users WHERE wikimedia_id = ? ORDER BY id DESC LIMIT 1", [
+    wikimedia_id,
+  ])
 
   return result[0]
 }
@@ -70,14 +90,12 @@ export async function updateUser(
 ) {
   const updates = []
   const values = []
-  let counter = 1
 
   // Construir la consulta dinámicamente
   for (const [key, value] of Object.entries(userData)) {
     if (value !== undefined) {
-      updates.push(`${key} = $${counter}`)
+      updates.push(`${key} = ?`)
       values.push(value)
-      counter++
     }
   }
 
@@ -85,10 +103,10 @@ export async function updateUser(
 
   values.push(id)
 
-  const result = await query(
-    `UPDATE users SET ${updates.join(", ")}, updated_at = NOW() WHERE id = $${counter} RETURNING *`,
-    values,
-  )
+  await query(`UPDATE users SET ${updates.join(", ")}, updated_at = NOW() WHERE id = ?`, values)
+
+  // Get the updated user
+  const result = await query("SELECT * FROM users WHERE id = ?", [id])
 
   return result[0]
 }
@@ -99,35 +117,36 @@ export async function initializeDatabase() {
     // Crear tabla de usuarios si no existe
     await query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL,
         wikimedia_id VARCHAR(255) UNIQUE,
         email VARCHAR(255),
         avatar_url TEXT,
-        last_login TIMESTAMP DEFAULT NOW(),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `)
 
     // Crear tabla de sesiones si no existe
     await query(`
       CREATE TABLE IF NOT EXISTS sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
         token VARCHAR(255) UNIQUE NOT NULL,
         expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `)
 
     // Crear tabla de scores si no existe
     await query(`
       CREATE TABLE IF NOT EXISTS scores (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL,
-        score INTEGER NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT NOW()
+        score INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
 
