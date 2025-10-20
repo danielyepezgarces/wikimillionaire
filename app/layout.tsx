@@ -1,8 +1,7 @@
 import type React from "react"
 import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { SessionProvider } from "next-auth/react"
-import { AuthProvider } from "@/contexts/auth-context"
+import { Providers } from "@/components/providers"
 
 export const metadata = {
   title: "WikiMillionaire - Juego de Preguntas con Wikidata",
@@ -19,11 +18,9 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <SessionProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </SessionProvider>
+          <Providers>
+            {children}
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
