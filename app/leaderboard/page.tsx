@@ -8,7 +8,7 @@ import { ArrowLeft, Trophy, Medal, Clock, Info } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
-import { getLeaderboard, getRankingResetInfo, type RankingResetInfo } from "@/lib/scores"
+import { getRankingResetInfo, type RankingResetInfo } from "@/lib/scores-utils"
 import Image from "next/image"
 import { CountdownTimer } from "@/components/countdown-timer"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -42,9 +42,13 @@ export default function LeaderboardPage() {
         setLoading(true)
         setError(null)
 
-        // Obtener datos del leaderboard
-        const data = await getLeaderboard(activeTab as any)
-        setLeaderboard(data)
+        // Obtener datos del leaderboard via API
+        const response = await fetch(`/api/scores?period=${activeTab}&limit=10`)
+        if (!response.ok) {
+          throw new Error("Failed to fetch leaderboard")
+        }
+        const result = await response.json()
+        setLeaderboard(result.data || [])
 
         // Obtener información de reinicio
         const resetData = getRankingResetInfo()
