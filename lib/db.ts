@@ -1,4 +1,4 @@
-import mysql from "mysql2/promise"
+import * as mysql from "mysql2/promise"
 
 // Create database connection configuration
 function getDbConfig() {
@@ -18,7 +18,8 @@ function getDbConfig() {
 }
 
 // Create connection pool for MariaDB
-const pool = mysql.createPool(getDbConfig())
+const dbConfig = getDbConfig()
+const pool = typeof dbConfig === "string" ? mysql.createPool(dbConfig) : mysql.createPool(dbConfig)
 
 // Function to execute SQL queries
 export async function query(text: string, params?: any[]) {
