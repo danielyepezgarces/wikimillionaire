@@ -1,36 +1,25 @@
 import NextAuth, { type NextAuthOptions } from "next-auth"
+import WikimediaProvider from "next-auth/providers/wikimedia"
 import { authConfig } from "./auth.config"
 import { getUserByWikimediaId, createUser, updateUser } from "./lib/db"
 import { getGravatarUrl } from "./lib/gravatar"
 
-// Custom Wikimedia provider since next-auth doesn't have a built-in one
-const WikimediaProvider = {
-  id: "wikimedia",
-  name: "Wikimedia",
-  type: "oauth" as const,
-  authorization: {
-    url: "https://meta.wikimedia.org/w/rest.php/oauth2/authorize",
-    params: {
-      scope: "basic",
-    },
-  },
-  token: "https://meta.wikimedia.org/w/rest.php/oauth2/access_token",
-  userinfo: "https://meta.wikimedia.org/w/rest.php/oauth2/resource/profile",
-  clientId: process.env.WIKIMEDIA_CLIENT_ID,
-  clientSecret: process.env.WIKIMEDIA_CLIENT_SECRET,
-  profile(profile: any) {
-    return {
-      id: profile.sub,
-      name: profile.username,
-      email: profile.email,
-      image: profile.email ? getGravatarUrl(profile.email) : null,
-    }
-  },
-}
-
 export const authOptions: NextAuthOptions = {
   ...authConfig,
-  providers: [WikimediaProvider as any],
+  providers: [
+    WikimediaProvider({
+      clientId: process.env.WIKIMEDIA_CLIENT_ID!,
+      clientSecret: process.env.WIKIMEDIA_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.username,
+          email: profile.email,
+          image: profile.email ? getGravatarUrl(profile.email) : null,
+        }
+      },
+    }),
+  ],
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account, profile }) {
