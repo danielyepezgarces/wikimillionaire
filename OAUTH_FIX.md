@@ -123,14 +123,26 @@ User information is saved in:
 
 ### Environment Variables
 
+The application supports both **confidential** and **public (non-confidential)** OAuth client types:
+
+#### For Confidential Clients (Recommended)
 ```bash
 WIKIMEDIA_CLIENT_ID=your_client_id
-# Note: WIKIMEDIA_CLIENT_SECRET is NOT used when implementing PKCE flow
-# PKCE is for public clients - do not send client_secret with code_verifier
+WIKIMEDIA_CLIENT_SECRET=your_client_secret
 WIKIMEDIA_REDIRECT_URI=https://wikimillionaire.vercel.app/auth/callback
 ```
 
-**Important**: When using PKCE (Proof Key for Code Exchange), the `client_secret` should **NOT** be sent in the token exchange request. PKCE is designed for public clients that cannot securely store secrets. The `code_verifier` serves as the authentication mechanism instead. Sending both `client_secret` and `code_verifier` will cause a "Client authentication failed" error from Wikimedia.
+#### For Public/Non-Confidential Clients
+```bash
+WIKIMEDIA_CLIENT_ID=your_client_id
+# Leave WIKIMEDIA_CLIENT_SECRET empty or unset for public clients
+WIKIMEDIA_REDIRECT_URI=https://wikimillionaire.vercel.app/auth/callback
+```
+
+**Important**: 
+- **Confidential clients** use `client_id` + `client_secret` for authentication (no PKCE)
+- **Public clients** use `client_id` + PKCE (`code_verifier`/`code_challenge`) for authentication (no client_secret)
+- Mixing both methods (sending both `client_secret` AND `code_verifier`) will cause "Client authentication failed" error from Wikimedia
 
 ### Wikimedia OAuth App Settings
 
@@ -138,9 +150,12 @@ In the Wikimedia OAuth app configuration, ensure:
 
 1. **OAuth 2.0 protocol** is enabled
 2. **Redirect URI** matches exactly: `https://wikimillionaire.vercel.app/auth/callback`
-3. **Client type** is "Public" (for PKCE flow) - **CRITICAL**: Public clients use PKCE without client_secret
+3. **Client type**: Choose based on your setup:
+   - **"Confidential"**: For server-side apps - use with `client_secret`, no PKCE
+   - **"Public"/"Non-confidential"**: For client-side apps - use with PKCE, no `client_secret`
 4. **Grants** include "authorization_code"
-5. **Do NOT enable "Confidential" client type** - This would require client_secret which conflicts with PKCE
+
+The application automatically detects which authentication method to use based on whether `WIKIMEDIA_CLIENT_SECRET` is configured.
 
 ## Debugging OAuth Issues
 
@@ -183,14 +198,17 @@ All OAuth operations now include prefixed logs:
 **Causes**:
 - `WIKIMEDIA_CLIENT_ID` is incorrect
 - OAuth app is not approved by Wikimedia
-- **CRITICAL**: Sending `client_secret` with PKCE flow (code_verifier)
-- OAuth app is configured as "Confidential" instead of "Public"
+- **Mismatch between client type and authentication method**:
+  - Confidential client without `client_secret` set
+  - Public client with `client_secret` set but PKCE expected
+  - Sending both `client_secret` AND `code_verifier` (mixing methods)
 
 **Solution**: 
 - Verify credentials in Wikimedia OAuth app settings
-- **Ensure OAuth app is set to "Public" client type**
-- **Do NOT send client_secret when using PKCE** - this is the most common cause
-- The code_verifier serves as authentication for public clients
+- **Match your app configuration to the client type**:
+  - If Wikimedia app is "Confidential": Set `WIKIMEDIA_CLIENT_SECRET` in environment
+  - If Wikimedia app is "Public"/"Non-confidential": Leave `WIKIMEDIA_CLIENT_SECRET` empty/unset
+- The application automatically uses the correct authentication method based on whether `client_secret` is configured
 
 ## Testing
 

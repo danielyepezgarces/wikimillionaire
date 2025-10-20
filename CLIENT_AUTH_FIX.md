@@ -6,25 +6,27 @@ Users were experiencing the error: **"Client authentication failed (e.g., unknow
 
 ## Root Cause
 
-The application was implementing **PKCE (Proof Key for Code Exchange)** OAuth flow but incorrectly sending **both** `client_secret` and `code_verifier` in the token exchange request. 
+The application was sending **both** `client_secret` (for confidential clients) and `code_verifier` (for PKCE/public clients) in the token exchange request, which is invalid according to OAuth 2.0 specifications.
 
 This is a fundamental OAuth 2.0 configuration issue:
 
 ### OAuth 2.0 Client Types
+
+According to [Wikimedia's OAuth documentation](https://www.mediawiki.org/wiki/OAuth/For_Developers):
 
 1. **Confidential Clients**
    - Can securely store a `client_secret`
    - Use standard OAuth flow: `client_id` + `client_secret`
    - Do NOT use PKCE
 
-2. **Public Clients**
+2. **Public/Non-Confidential Clients**
    - Cannot securely store secrets (e.g., browser-based apps, mobile apps)
-   - Use PKCE for security: `client_id` + `code_verifier`
+   - Use PKCE for security: `client_id` + `code_verifier`/`code_challenge`
    - Do NOT send `client_secret`
 
 ### The Problem
 
-The code was mixing both authentication methods:
+The previous code was always using PKCE **AND** always sending `client_secret`, mixing both authentication methods:
 ```typescript
 // ❌ INCORRECT - Mixing confidential and public client authentication
 params.append("client_id", clientId)
@@ -33,30 +35,49 @@ params.append("code_verifier", codeVerifier)  // Public client auth (PKCE)
 ```
 
 This caused Wikimedia's OAuth server to reject the request because:
-- If it's a public client (PKCE), it should NOT receive a `client_secret`
-- If it's a confidential client, it should NOT receive a `code_verifier`
+- OAuth providers expect EITHER confidential client auth OR public client auth (PKCE)
+- Sending both creates ambiguity about which authentication method to validate
 
 ## Solution
 
-Remove `client_secret` from token exchange requests when using PKCE:
+Make the authentication flow adaptive based on the client type:
 
 ```typescript
-// ✅ CORRECT - Public client with PKCE
-params.append("client_id", clientId)
-params.append("code_verifier", codeVerifier)  // PKCE authentication only
+// ✅ CORRECT - Adaptive authentication based on client type
+if (clientSecret) {
+  // Confidential client
+  params.append("client_id", clientId)
+  params.append("client_secret", clientSecret)
+} else {
+  // Public client with PKCE
+  params.append("client_id", clientId)
+  params.append("code_verifier", codeVerifier)
+}
 ```
+
+The application now automatically detects which authentication method to use:
+- If `WIKIMEDIA_CLIENT_SECRET` is set → Use confidential client flow (no PKCE)
+- If `WIKIMEDIA_CLIENT_SECRET` is not set → Use public client flow (with PKCE)
 
 ## Changes Made
 
-### 1. Token Exchange Endpoint (`app/api/auth/token/route.ts`)
-- ✅ Removed `client_secret` parameter from URLSearchParams
-- ✅ Removed unused `clientSecret` variable
-- ✅ Updated validation to only check for `clientId`
-- ✅ Added explanatory comments
+### 1. Authorization Endpoint (`app/api/auth/wikimedia/route.ts`)
+- ✅ Detects client type based on presence of `WIKIMEDIA_CLIENT_SECRET`
+- ✅ For confidential clients: Skips PKCE, generates only `state`
+- ✅ For public clients: Generates PKCE parameters (`code_challenge`, `code_verifier`)
+- ✅ Builds appropriate authorization URL based on client type
 
-### 2. Callback Endpoint (`app/api/auth/callback/route.ts`)
-- ✅ Removed `client_secret` from token exchange request
-- ✅ Added explanatory comments
+### 2. Token Exchange Endpoint (`app/api/auth/token/route.ts`)
+- ✅ Detects client type based on presence of `WIKIMEDIA_CLIENT_SECRET`
+- ✅ For confidential clients: Sends `client_secret` (no PKCE)
+- ✅ For public clients: Sends `code_verifier` (no client_secret)
+- ✅ Added validation to ensure proper configuration
+- ✅ Added logging to indicate which client type is being used
+
+### 3. Callback Endpoint (`app/api/auth/callback/route.ts`)
+- ✅ Detects client type based on presence of `WIKIMEDIA_CLIENT_SECRET`
+- ✅ Conditionally includes either `client_secret` or `code_verifier` in token request
+- ✅ Never sends both parameters together
 
 ### 3. Documentation Updates
 - ✅ Updated `OAUTH_FIX.md` with critical notes about PKCE
@@ -65,12 +86,20 @@ params.append("code_verifier", codeVerifier)  // PKCE authentication only
 
 ## Wikimedia OAuth App Configuration
 
-To avoid this error, ensure your Wikimedia OAuth app is configured as:
+The application now supports both client types. Configure your Wikimedia OAuth app based on your preference:
 
-1. **Client Type**: **Public** (not Confidential)
+### For Confidential Clients (Recommended for Server-Side Apps)
+1. **Client Type**: **Confidential**
 2. **OAuth 2.0 Protocol**: Enabled
 3. **Grants**: authorization_code
-4. **PKCE**: Enabled (implicit with Public client type)
+4. **Environment**: Set both `WIKIMEDIA_CLIENT_ID` and `WIKIMEDIA_CLIENT_SECRET`
+
+### For Public/Non-Confidential Clients (For Client-Side Apps)
+1. **Client Type**: **Public** or **Non-Confidential**
+2. **OAuth 2.0 Protocol**: Enabled
+3. **Grants**: authorization_code
+4. **PKCE**: Enabled (automatic for public clients)
+5. **Environment**: Set only `WIKIMEDIA_CLIENT_ID` (leave `WIKIMEDIA_CLIENT_SECRET` empty or unset)
 
 ## Security Implications
 

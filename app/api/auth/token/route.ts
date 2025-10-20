@@ -4,15 +4,15 @@ export async function POST(request: NextRequest) {
   try {
     const { code, codeVerifier } = await request.json()
 
-    if (!code || !codeVerifier) {
-      console.error("[Token] Missing required parameters:", { code: !!code, codeVerifier: !!codeVerifier })
+    if (!code) {
+      console.error("[Token] Missing required parameter: code")
       return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 })
     }
 
     console.log("[Token] Processing token request with code:", code.substring(0, 10) + "...")
-    console.log("[Token] CodeVerifier present:", !!codeVerifier)
 
     const clientId = process.env.WIKIMEDIA_CLIENT_ID
+    const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
     const redirectUri = process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback"
 
     if (!clientId) {
@@ -20,8 +20,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faltan variables de entorno para la autenticación" }, { status: 500 })
     }
 
+    // Determine client type based on whether client_secret is configured
+    const isConfidentialClient = !!clientSecret
+    const isPublicClient = !clientSecret && !!codeVerifier
+
+    if (!isConfidentialClient && !isPublicClient) {
+      console.error("[Token] Invalid configuration: Either client_secret OR code_verifier must be provided")
+      return NextResponse.json(
+        { error: "Configuración de autenticación inválida" },
+        { status: 500 }
+      )
+    }
+
     console.log("[Token] Using client_id:", clientId)
     console.log("[Token] Using redirect_uri:", redirectUri)
+    console.log("[Token] Client type:", isConfidentialClient ? "confidential" : "public (PKCE)")
 
     // Use meta.wikimedia.org for consistency with the authorization endpoint
     const tokenUrl = "https://meta.wikimedia.org/w/rest.php/oauth2/access_token"
@@ -31,9 +44,14 @@ export async function POST(request: NextRequest) {
     params.append("code", code)
     params.append("redirect_uri", redirectUri)
     params.append("client_id", clientId)
-    // When using PKCE (code_verifier), DO NOT send client_secret
-    // PKCE is for public clients and mixing it with client_secret causes "Client authentication failed"
-    params.append("code_verifier", codeVerifier)
+
+    // For confidential clients: use client_secret (no PKCE)
+    // For public clients: use PKCE code_verifier (no client_secret)
+    if (isConfidentialClient) {
+      params.append("client_secret", clientSecret)
+    } else {
+      params.append("code_verifier", codeVerifier)
+    }
 
     console.log("[Token] Making request to:", tokenUrl)
 

@@ -30,20 +30,30 @@ export async function GET(request: NextRequest) {
 
 
     // Intercambio del código por el token
-    // When using PKCE (code_verifier), DO NOT send client_secret
-    // PKCE is for public clients and mixing it with client_secret causes "Client authentication failed"
+    const clientSecret = process.env.WIKIMEDIA_CLIENT_SECRET
+    const isConfidentialClient = !!clientSecret
+
+    const tokenParams: Record<string, string> = {
+      client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback",
+    }
+
+    // For confidential clients: use client_secret (no PKCE)
+    // For public clients: use PKCE code_verifier (no client_secret)
+    if (isConfidentialClient) {
+      tokenParams.client_secret = clientSecret
+    } else {
+      tokenParams.code_verifier = parsedCookie.codeVerifier
+    }
+
     const tokenResponse = await fetch("https://meta.wikimedia.org/w/rest.php/oauth2/access_token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        client_id: process.env.WIKIMEDIA_CLIENT_ID || "",
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: process.env.WIKIMEDIA_REDIRECT_URI || "https://wikimillionaire.vercel.app/auth/callback",
-        code_verifier: parsedCookie.codeVerifier,
-      }),
+      body: new URLSearchParams(tokenParams),
     })
 
     if (!tokenResponse.ok) {
