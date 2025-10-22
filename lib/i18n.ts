@@ -90,6 +90,26 @@ export type Translations = {
     logout: string
     comingSoon: string
   }
+  multiplayer: {
+    title: string
+    description: string
+    comingSoon: string
+    comingSoonDescription: string
+    features: {
+      webrtc: {
+        title: string
+        description: string
+      }
+      gameRoom: {
+        title: string
+        description: string
+      }
+      realtime: {
+        title: string
+        description: string
+      }
+    }
+  }
   profile: {
     title: string
     welcome: string
@@ -291,6 +311,26 @@ export const es: Translations = {
     login: "Iniciar sesión con Wikidata",
     logout: "Cerrar sesión",
     comingSoon: "Próximamente",
+  },
+  multiplayer: {
+    title: "Modo Multijugador",
+    description: "Compite en tiempo real con otros jugadores",
+    comingSoon: "Próximamente",
+    comingSoonDescription: "El modo multijugador y las salas de juego con WebRTC están en desarrollo. ¡Pronto podrás competir en tiempo real con jugadores de todo el mundo!",
+    features: {
+      webrtc: {
+        title: "Conexión en Tiempo Real",
+        description: "Usa tecnología WebRTC para una experiencia de juego fluida y sin retrasos.",
+      },
+      gameRoom: {
+        title: "Salas de Juego",
+        description: "Crea o únete a salas de juego privadas con tus amigos.",
+      },
+      realtime: {
+        title: "Competencia en Vivo",
+        description: "Compite con otros jugadores respondiendo las mismas preguntas al mismo tiempo.",
+      },
+    },
   },
   profile: {
     title: "Perfil de Usuario",
@@ -494,6 +534,26 @@ export const en: Translations = {
     logout: "Logout",
     comingSoon: "Coming Soon",
   },
+  multiplayer: {
+    title: "Multiplayer Mode",
+    description: "Compete in real-time with other players",
+    comingSoon: "Coming Soon",
+    comingSoonDescription: "Multiplayer mode and game rooms with WebRTC are under development. Soon you'll be able to compete in real-time with players from around the world!",
+    features: {
+      webrtc: {
+        title: "Real-Time Connection",
+        description: "Use WebRTC technology for a smooth and lag-free gaming experience.",
+      },
+      gameRoom: {
+        title: "Game Rooms",
+        description: "Create or join private game rooms with your friends.",
+      },
+      realtime: {
+        title: "Live Competition",
+        description: "Compete with other players by answering the same questions at the same time.",
+      },
+    },
+  },
   profile: {
     title: "User Profile",
     welcome: "Welcome, {username}",
@@ -695,6 +755,26 @@ export const fr: Translations = {
     login: "Se connecter avec Wikidata",
     logout: "Se déconnecter",
     comingSoon: "Bientôt Disponible",
+  },
+  multiplayer: {
+    title: "Mode Multijoueur",
+    description: "Compétition en temps réel avec d'autres joueurs",
+    comingSoon: "Bientôt Disponible",
+    comingSoonDescription: "Le mode multijoueur et les salles de jeu avec WebRTC sont en développement. Bientôt, vous pourrez rivaliser en temps réel avec des joueurs du monde entier !",
+    features: {
+      webrtc: {
+        title: "Connexion en Temps Réel",
+        description: "Utilisez la technologie WebRTC pour une expérience de jeu fluide et sans décalage.",
+      },
+      gameRoom: {
+        title: "Salles de Jeu",
+        description: "Créez ou rejoignez des salles de jeu privées avec vos amis.",
+      },
+      realtime: {
+        title: "Compétition en Direct",
+        description: "Affrontez d'autres joueurs en répondant aux mêmes questions en même temps.",
+      },
+    },
   },
   profile: {
     title: "Profil Utilisateur",
@@ -898,6 +978,26 @@ export const de: Translations = {
     logout: "Abmelden",
     comingSoon: "Demnächst Verfügbar",
   },
+  multiplayer: {
+    title: "Mehrspieler-Modus",
+    description: "Konkurrieren Sie in Echtzeit mit anderen Spielern",
+    comingSoon: "Demnächst Verfügbar",
+    comingSoonDescription: "Der Mehrspieler-Modus und Spielräume mit WebRTC befinden sich in der Entwicklung. Bald können Sie in Echtzeit mit Spielern aus der ganzen Welt konkurrieren!",
+    features: {
+      webrtc: {
+        title: "Echtzeit-Verbindung",
+        description: "Nutzen Sie WebRTC-Technologie für ein reibungsloses und verzögerungsfreies Spielerlebnis.",
+      },
+      gameRoom: {
+        title: "Spielräume",
+        description: "Erstellen oder betreten Sie private Spielräume mit Ihren Freunden.",
+      },
+      realtime: {
+        title: "Live-Wettbewerb",
+        description: "Konkurrieren Sie mit anderen Spielern, indem Sie dieselben Fragen gleichzeitig beantworten.",
+      },
+    },
+  },
   profile: {
     title: "Benutzerprofil",
     welcome: "Willkommen, {username}",
@@ -1099,6 +1199,26 @@ export const pt: Translations = {
     login: "Entrar com Wikidata",
     logout: "Sair",
     comingSoon: "Em Breve",
+  },
+  multiplayer: {
+    title: "Modo Multijogador",
+    description: "Compete em tempo real com outros jogadores",
+    comingSoon: "Em Breve",
+    comingSoonDescription: "O modo multijogador e as salas de jogo com WebRTC estão em desenvolvimento. Em breve, você poderá competir em tempo real com jogadores de todo o mundo!",
+    features: {
+      webrtc: {
+        title: "Conexão em Tempo Real",
+        description: "Use a tecnologia WebRTC para uma experiência de jogo suave e sem atrasos.",
+      },
+      gameRoom: {
+        title: "Salas de Jogo",
+        description: "Crie ou participe de salas de jogo privadas com seus amigos.",
+      },
+      realtime: {
+        title: "Competição ao Vivo",
+        description: "Compete com outros jogadores respondendo às mesmas perguntas ao mesmo tempo.",
+      },
+    },
   },
   profile: {
     title: "Perfil do Usuário",
