@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { getRandomQuestion } from "@/lib/wikidata"
+import { getRandomQuestion, resetQuestionSession } from "@/lib/wikidata"
 import { ArrowLeft, Award } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSound } from "@/hooks/use-sound"
@@ -71,6 +71,9 @@ export default function PlayPage() {
       localStorage.setItem("wikimillionaire-username", username)
     }
 
+    // Reiniciar la sesión de preguntas para evitar duplicados
+    resetQuestionSession()
+
     setGameState("playing")
     setLevel(0)
     setLifelines({
@@ -111,6 +114,16 @@ export default function PlayPage() {
       } else {
         // No image, start timer immediately
         setTimerPaused(false)
+      }
+      
+      // Preload next question in background (fire and forget)
+      const nextLevel = level + 1
+      if (nextLevel < PRIZE_LEVELS.length) {
+        const nextDifficulty = nextLevel < 5 ? "easy" : nextLevel < 10 ? "medium" : "hard"
+        // Trigger preload without waiting
+        getRandomQuestion(nextLevel).catch(() => {
+          // Ignore preload errors
+        })
       }
     } catch (error) {
       console.error("Error loading question:", error)
