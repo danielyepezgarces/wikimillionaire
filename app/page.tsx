@@ -63,6 +63,15 @@ export default function HomePage() {
             variant="outline"
             size="lg"
             className="border-purple-700 text-white hover:bg-purple-800/50"
+            onClick={() => handleNavigation("/multiplayer")}
+          >
+            <Users className="mr-2 h-5 w-5" />
+            Multiplayer
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-purple-700 text-white hover:bg-purple-800/50"
             onClick={() => handleNavigation("/leaderboard")}
           >
             <Trophy className="mr-2 h-5 w-5" />
