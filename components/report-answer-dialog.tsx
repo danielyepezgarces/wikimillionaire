@@ -24,13 +24,19 @@ import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { ReportReason } from "@/types/report"
 
+interface GameQuestion {
+  question: string
+  id?: string
+  correctAnswer: string
+  userAnswer: string
+  wasCorrect: boolean
+  level: number
+}
+
 interface ReportAnswerDialogProps {
   isOpen: boolean
   onClose: () => void
-  question: string
-  questionId?: string
-  selectedAnswer: string
-  correctAnswer: string
+  questions: GameQuestion[]
   username: string
   userId?: string
   translations: any
@@ -39,20 +45,22 @@ interface ReportAnswerDialogProps {
 export function ReportAnswerDialog({
   isOpen,
   onClose,
-  question,
-  questionId,
-  selectedAnswer,
-  correctAnswer,
+  questions,
   username,
   userId,
   translations: t,
 }: ReportAnswerDialogProps) {
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number>(0)
   const [reason, setReason] = useState<ReportReason>("incorrect_answer")
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
+  const selectedQuestion = questions[selectedQuestionIndex]
+
   const handleSubmit = async () => {
+    if (!selectedQuestion) return
+    
     setIsSubmitting(true)
     try {
       const response = await fetch("/api/reports", {
@@ -61,10 +69,10 @@ export function ReportAnswerDialog({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          questionId,
-          question,
-          selectedAnswer,
-          correctAnswer,
+          questionId: selectedQuestion.id,
+          question: selectedQuestion.question,
+          selectedAnswer: selectedQuestion.userAnswer,
+          correctAnswer: selectedQuestion.correctAnswer,
           reason,
           description: description.trim() || undefined,
           username,
@@ -116,23 +124,55 @@ export function ReportAnswerDialog({
             <AlertDescription>{t.report.comingSoonDescription}</AlertDescription>
           </Alert>
 
+          {/* Question Selection - Only show if multiple questions */}
+          {questions.length > 1 && (
+            <div className="space-y-2">
+              <Label htmlFor="question-select">{t.report.form.selectQuestion || "Seleccionar pregunta"}</Label>
+              <Select 
+                value={selectedQuestionIndex.toString()} 
+                onValueChange={(value) => setSelectedQuestionIndex(parseInt(value))}
+              >
+                <SelectTrigger id="question-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {questions.map((q, index) => (
+                    <SelectItem key={index} value={index.toString()}>
+                      {t.game?.level || "Nivel"} {q.level}: {q.question.substring(0, 50)}...
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Question */}
-          <div className="space-y-2">
-            <Label>{t.report.form.question}</Label>
-            <div className="rounded-md border p-3 bg-muted/50 text-sm">{question}</div>
-          </div>
+          {selectedQuestion && (
+            <>
+              <div className="space-y-2">
+                <Label>{t.report.form.question}</Label>
+                <div className="rounded-md border p-3 bg-muted/50 text-sm">{selectedQuestion.question}</div>
+              </div>
 
-          {/* Selected Answer */}
-          <div className="space-y-2">
-            <Label>{t.report.form.selectedAnswer}</Label>
-            <div className="rounded-md border p-3 bg-muted/50 text-sm">{selectedAnswer}</div>
-          </div>
+              {/* Selected Answer */}
+              <div className="space-y-2">
+                <Label>{t.report.form.selectedAnswer}</Label>
+                <div className={`rounded-md border p-3 text-sm ${
+                  selectedQuestion.wasCorrect ? 'bg-green-500/10 border-green-500' : 'bg-red-500/10 border-red-500'
+                }`}>
+                  {selectedQuestion.userAnswer}
+                </div>
+              </div>
 
-          {/* Correct Answer */}
-          <div className="space-y-2">
-            <Label>{t.report.form.correctAnswer}</Label>
-            <div className="rounded-md border p-3 bg-muted/50 text-sm">{correctAnswer}</div>
-          </div>
+              {/* Correct Answer */}
+              <div className="space-y-2">
+                <Label>{t.report.form.correctAnswer}</Label>
+                <div className="rounded-md border p-3 bg-green-500/10 border-green-500 text-sm">
+                  {selectedQuestion.correctAnswer}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Reason */}
           <div className="space-y-2">
