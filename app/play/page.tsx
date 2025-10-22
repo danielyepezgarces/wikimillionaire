@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getRandomQuestion, resetQuestionSession } from "@/lib/wikidata"
-import { ArrowLeft, Award } from "lucide-react"
+import { ArrowLeft, Award, Flag } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSound } from "@/hooks/use-sound"
 import { useLocale } from "@/hooks/use-locale"
 import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
+import { ReportAnswerDialog } from "@/components/report-answer-dialog"
 
 const PRIZE_LEVELS = [100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000]
 
@@ -42,6 +43,7 @@ export default function PlayPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [timerPaused, setTimerPaused] = useState(false)
+  const [showReportDialog, setShowReportDialog] = useState(false)
 
   useEffect(() => {
     // Si el usuario está autenticado, usar su nombre de usuario
@@ -609,6 +611,21 @@ export default function PlayPage() {
                 </Button>
               ))}
             </div>
+
+            {/* Report Button - Only show after answer is revealed */}
+            {selectedAnswer && correctAnswer && (
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReportDialog(true)}
+                  className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
+                >
+                  <Flag className="mr-2 h-4 w-4" />
+                  {t.report.button}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex h-64 items-center justify-center">
@@ -646,6 +663,21 @@ export default function PlayPage() {
           <p className="text-center text-sm text-gray-300">© 2025 WikiMillionaire. {t.general.credits}</p>
         </div>
       </footer>
+
+      {/* Report Answer Dialog */}
+      {currentQuestion && selectedAnswer && correctAnswer && (
+        <ReportAnswerDialog
+          isOpen={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+          question={currentQuestion.question}
+          questionId={currentQuestion.id}
+          selectedAnswer={selectedAnswer}
+          correctAnswer={correctAnswer}
+          username={username}
+          userId={user?.id}
+          translations={t}
+        />
+      )}
     </div>
   )
 }
