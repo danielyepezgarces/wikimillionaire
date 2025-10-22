@@ -239,6 +239,7 @@ export type Translations = {
       reason: string
       description: string
       descriptionPlaceholder: string
+      selectQuestion: string
       submit: string
       cancel: string
     }
@@ -492,6 +493,7 @@ export const es: Translations = {
       reason: "Motivo del reporte",
       description: "Descripción (opcional)",
       descriptionPlaceholder: "Explica por qué crees que esta respuesta es incorrecta...",
+      selectQuestion: "Seleccionar pregunta",
       submit: "Enviar Reporte",
       cancel: "Cancelar",
     },
@@ -745,6 +747,7 @@ export const en: Translations = {
       reason: "Reason for report",
       description: "Description (optional)",
       descriptionPlaceholder: "Explain why you think this answer is incorrect...",
+      selectQuestion: "Select question",
       submit: "Submit Report",
       cancel: "Cancel",
     },
@@ -998,6 +1001,7 @@ export const fr: Translations = {
       reason: "Raison du signalement",
       description: "Description (optionnelle)",
       descriptionPlaceholder: "Expliquez pourquoi vous pensez que cette réponse est incorrecte...",
+      selectQuestion: "Sélectionner une question",
       submit: "Envoyer le Signalement",
       cancel: "Annuler",
     },
@@ -1251,6 +1255,7 @@ export const de: Translations = {
       reason: "Grund für die Meldung",
       description: "Beschreibung (optional)",
       descriptionPlaceholder: "Erklären Sie, warum Sie diese Antwort für falsch halten...",
+      selectQuestion: "Frage auswählen",
       submit: "Meldung Absenden",
       cancel: "Abbrechen",
     },
@@ -1504,6 +1509,7 @@ export const pt: Translations = {
       reason: "Motivo do relatório",
       description: "Descrição (opcional)",
       descriptionPlaceholder: "Explique por que você acha que esta resposta está incorreta...",
+      selectQuestion: "Selecionar pergunta",
       submit: "Enviar Relatório",
       cancel: "Cancelar",
     },
