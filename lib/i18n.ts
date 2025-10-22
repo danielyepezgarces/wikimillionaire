@@ -220,6 +220,38 @@ export type Translations = {
       saved: string
     }
   }
+  report: {
+    title: string
+    description: string
+    comingSoon: string
+    comingSoonDescription: string
+    button: string
+    reasons: {
+      incorrect_answer: string
+      outdated_data: string
+      ambiguous_question: string
+      other: string
+    }
+    form: {
+      question: string
+      selectedAnswer: string
+      correctAnswer: string
+      reason: string
+      description: string
+      descriptionPlaceholder: string
+      selectQuestion: string
+      submit: string
+      cancel: string
+    }
+    success: {
+      title: string
+      description: string
+    }
+    error: {
+      title: string
+      description: string
+    }
+  }
 }
 
 // Traducciones en español
@@ -440,6 +472,38 @@ export const es: Translations = {
       dark: "Oscuro",
       save: "Guardar",
       saved: "¡Guardado!",
+    },
+  },
+  report: {
+    title: "Reportar Respuesta Incorrecta",
+    description: "Ayúdanos a mejorar el juego reportando respuestas que consideres incorrectas",
+    comingSoon: "Próximamente",
+    comingSoonDescription: "La integración directa con Wikidata está en desarrollo. Por ahora, tu reporte se guardará para revisión futura.",
+    button: "Reportar",
+    reasons: {
+      incorrect_answer: "Respuesta incorrecta",
+      outdated_data: "Datos desactualizados",
+      ambiguous_question: "Pregunta ambigua",
+      other: "Otro",
+    },
+    form: {
+      question: "Pregunta",
+      selectedAnswer: "Tu respuesta seleccionada",
+      correctAnswer: "Respuesta marcada como correcta",
+      reason: "Motivo del reporte",
+      description: "Descripción (opcional)",
+      descriptionPlaceholder: "Explica por qué crees que esta respuesta es incorrecta...",
+      selectQuestion: "Seleccionar pregunta",
+      submit: "Enviar Reporte",
+      cancel: "Cancelar",
+    },
+    success: {
+      title: "¡Reporte enviado!",
+      description: "Gracias por ayudarnos a mejorar el juego. Tu reporte será revisado.",
+    },
+    error: {
+      title: "Error al enviar",
+      description: "No se pudo enviar el reporte. Por favor, inténtalo de nuevo.",
     },
   },
 }
@@ -664,6 +728,38 @@ export const en: Translations = {
       saved: "Saved!",
     },
   },
+  report: {
+    title: "Report Incorrect Answer",
+    description: "Help us improve the game by reporting answers you think are incorrect",
+    comingSoon: "Coming Soon",
+    comingSoonDescription: "Direct Wikidata integration is under development. For now, your report will be saved for future review.",
+    button: "Report",
+    reasons: {
+      incorrect_answer: "Incorrect answer",
+      outdated_data: "Outdated data",
+      ambiguous_question: "Ambiguous question",
+      other: "Other",
+    },
+    form: {
+      question: "Question",
+      selectedAnswer: "Your selected answer",
+      correctAnswer: "Answer marked as correct",
+      reason: "Reason for report",
+      description: "Description (optional)",
+      descriptionPlaceholder: "Explain why you think this answer is incorrect...",
+      selectQuestion: "Select question",
+      submit: "Submit Report",
+      cancel: "Cancel",
+    },
+    success: {
+      title: "Report submitted!",
+      description: "Thank you for helping us improve the game. Your report will be reviewed.",
+    },
+    error: {
+      title: "Submission error",
+      description: "Could not submit the report. Please try again.",
+    },
+  },
 }
 
 // Traducciones en francés
@@ -884,6 +980,38 @@ export const fr: Translations = {
       dark: "Sombre",
       save: "Enregistrer",
       saved: "Enregistré !",
+    },
+  },
+  report: {
+    title: "Signaler une Réponse Incorrecte",
+    description: "Aidez-nous à améliorer le jeu en signalant les réponses que vous jugez incorrectes",
+    comingSoon: "Prochainement",
+    comingSoonDescription: "L'intégration directe avec Wikidata est en développement. Pour l'instant, votre signalement sera enregistré pour une révision future.",
+    button: "Signaler",
+    reasons: {
+      incorrect_answer: "Réponse incorrecte",
+      outdated_data: "Données obsolètes",
+      ambiguous_question: "Question ambiguë",
+      other: "Autre",
+    },
+    form: {
+      question: "Question",
+      selectedAnswer: "Votre réponse sélectionnée",
+      correctAnswer: "Réponse marquée comme correcte",
+      reason: "Raison du signalement",
+      description: "Description (optionnelle)",
+      descriptionPlaceholder: "Expliquez pourquoi vous pensez que cette réponse est incorrecte...",
+      selectQuestion: "Sélectionner une question",
+      submit: "Envoyer le Signalement",
+      cancel: "Annuler",
+    },
+    success: {
+      title: "Signalement envoyé !",
+      description: "Merci de nous aider à améliorer le jeu. Votre signalement sera examiné.",
+    },
+    error: {
+      title: "Erreur d'envoi",
+      description: "Impossible d'envoyer le signalement. Veuillez réessayer.",
     },
   },
 }
@@ -1108,6 +1236,38 @@ export const de: Translations = {
       saved: "Gespeichert!",
     },
   },
+  report: {
+    title: "Falsche Antwort Melden",
+    description: "Helfen Sie uns, das Spiel zu verbessern, indem Sie Antworten melden, die Sie für falsch halten",
+    comingSoon: "Demnächst",
+    comingSoonDescription: "Die direkte Wikidata-Integration wird entwickelt. Vorerst wird Ihre Meldung zur späteren Überprüfung gespeichert.",
+    button: "Melden",
+    reasons: {
+      incorrect_answer: "Falsche Antwort",
+      outdated_data: "Veraltete Daten",
+      ambiguous_question: "Mehrdeutige Frage",
+      other: "Sonstiges",
+    },
+    form: {
+      question: "Frage",
+      selectedAnswer: "Ihre ausgewählte Antwort",
+      correctAnswer: "Als richtig markierte Antwort",
+      reason: "Grund für die Meldung",
+      description: "Beschreibung (optional)",
+      descriptionPlaceholder: "Erklären Sie, warum Sie diese Antwort für falsch halten...",
+      selectQuestion: "Frage auswählen",
+      submit: "Meldung Absenden",
+      cancel: "Abbrechen",
+    },
+    success: {
+      title: "Meldung gesendet!",
+      description: "Danke, dass Sie uns helfen, das Spiel zu verbessern. Ihre Meldung wird überprüft.",
+    },
+    error: {
+      title: "Fehler beim Senden",
+      description: "Die Meldung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    },
+  },
 }
 
 // Traducciones en portugués
@@ -1328,6 +1488,38 @@ export const pt: Translations = {
       dark: "Escuro",
       save: "Salvar",
       saved: "Salvo!",
+    },
+  },
+  report: {
+    title: "Reportar Resposta Incorreta",
+    description: "Ajude-nos a melhorar o jogo reportando respostas que você considera incorretas",
+    comingSoon: "Em Breve",
+    comingSoonDescription: "A integração direta com Wikidata está em desenvolvimento. Por enquanto, seu relatório será salvo para revisão futura.",
+    button: "Reportar",
+    reasons: {
+      incorrect_answer: "Resposta incorreta",
+      outdated_data: "Dados desatualizados",
+      ambiguous_question: "Pergunta ambígua",
+      other: "Outro",
+    },
+    form: {
+      question: "Pergunta",
+      selectedAnswer: "Sua resposta selecionada",
+      correctAnswer: "Resposta marcada como correta",
+      reason: "Motivo do relatório",
+      description: "Descrição (opcional)",
+      descriptionPlaceholder: "Explique por que você acha que esta resposta está incorreta...",
+      selectQuestion: "Selecionar pergunta",
+      submit: "Enviar Relatório",
+      cancel: "Cancelar",
+    },
+    success: {
+      title: "Relatório enviado!",
+      description: "Obrigado por nos ajudar a melhorar o jogo. Seu relatório será revisado.",
+    },
+    error: {
+      title: "Erro ao enviar",
+      description: "Não foi possível enviar o relatório. Por favor, tente novamente.",
     },
   },
 }
