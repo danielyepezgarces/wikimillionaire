@@ -27,8 +27,8 @@ export async function getRandomQuestion(level: number): Promise<WikidataQuestion
   const difficulty = level < 5 ? "easy" : level < 10 ? "medium" : "hard"
 
   try {
-    // Intentar obtener una pregunta real de Wikidata
-    const question = await generateWikidataQuestion(difficulty)
+    // Intentar obtener una pregunta del caché o generarla
+    const question = await getCachedOrGenerateQuestion(difficulty)
     return question
   } catch (error) {
     console.error("Error fetching question from Wikidata:", error)
@@ -125,16 +125,21 @@ async function generateWikidataQuestion(difficulty: string): Promise<WikidataQue
       const fallbackType = remainingTypes[Math.floor(Math.random() * remainingTypes.length)]
 
       // Intentar con un tipo alternativo
-      switch (fallbackType) {
-        case "capital":
-          return await generateCapitalQuestion()
-        case "population":
-          return await generatePopulationQuestion()
-        case "element":
-          return await generateElementQuestion()
-        default:
-          // Si todo falla, usar una pregunta de respaldo
-          throw new Error("All question types failed")
+      try {
+        switch (fallbackType) {
+          case "capital":
+            return await generateCapitalQuestion()
+          case "population":
+            return await generatePopulationQuestion()
+          case "element":
+            return await generateElementQuestion()
+          default:
+            // Si todo falla, usar una pregunta de respaldo
+            throw new Error("All question types failed")
+        }
+      } catch (fallbackError) {
+        // Si el fallback también falla, lanzar el error
+        throw new Error("All question types failed")
       }
     }
 
@@ -845,13 +850,69 @@ const questionCache: Record<string, WikidataQuestion[]> = {
   hard: [],
 }
 
+// Rastreador de preguntas usadas en la sesión actual
+const usedQuestionIds = new Set<string>()
+
+// Configuración del caché
+const CACHE_SIZE_PER_DIFFICULTY = 10 // Número de preguntas a mantener en caché por dificultad
+const PRELOAD_THRESHOLD = 3 // Cuando el caché tiene menos de este número, precargar más
+
+// Función para precargar preguntas en el caché
+async function preloadQuestions(difficulty: string): Promise<void> {
+  const currentCacheSize = questionCache[difficulty]?.length || 0
+  
+  if (currentCacheSize >= CACHE_SIZE_PER_DIFFICULTY) {
+    return // El caché ya está lleno
+  }
+
+  const questionsToLoad = CACHE_SIZE_PER_DIFFICULTY - currentCacheSize
+
+  try {
+    // Generar múltiples preguntas en paralelo para mayor eficiencia
+    const promises = []
+    for (let i = 0; i < questionsToLoad; i++) {
+      promises.push(generateWikidataQuestion(difficulty))
+    }
+
+    const newQuestions = await Promise.all(promises)
+    
+    // Filtrar preguntas duplicadas (basado en ID)
+    const uniqueQuestions = newQuestions.filter((q) => {
+      const id = q.id || `${q.question}-${q.correctAnswer}`
+      return !usedQuestionIds.has(id)
+    })
+
+    // Agregar las nuevas preguntas al caché
+    questionCache[difficulty] = [...(questionCache[difficulty] || []), ...uniqueQuestions]
+  } catch (error) {
+    console.error(`Error preloading questions for ${difficulty}:`, error)
+    // No lanzar el error, simplemente registrarlo
+  }
+}
+
 // Función para obtener una pregunta del caché o generarla si no hay
 async function getCachedOrGenerateQuestion(difficulty: string): Promise<WikidataQuestion> {
+  // Inicializar el caché para esta dificultad si no existe
+  if (!questionCache[difficulty]) {
+    questionCache[difficulty] = []
+  }
+
+  // Precargar preguntas si el caché está bajo
+  if (questionCache[difficulty].length < PRELOAD_THRESHOLD) {
+    // No esperar la precarga, hacerlo en segundo plano
+    preloadQuestions(difficulty).catch((error) => {
+      console.error("Background preload failed:", error)
+    })
+  }
+
   // Verificar si hay preguntas en caché
-  if (questionCache[difficulty] && questionCache[difficulty].length > 0) {
+  if (questionCache[difficulty].length > 0) {
     // Usar una pregunta del caché
     const randomIndex = Math.floor(Math.random() * questionCache[difficulty].length)
     const question = questionCache[difficulty][randomIndex]
+
+    // Generar un ID único para la pregunta si no tiene uno
+    const questionId = question.id || `${question.question}-${question.correctAnswer}`
 
     // Eliminar la pregunta usada del caché
     questionCache[difficulty] = [
@@ -859,11 +920,24 @@ async function getCachedOrGenerateQuestion(difficulty: string): Promise<Wikidata
       ...questionCache[difficulty].slice(randomIndex + 1),
     ]
 
+    // Marcar la pregunta como usada en esta sesión
+    usedQuestionIds.add(questionId)
+
     return question
   }
 
-  // Si no hay preguntas en caché, generar una nueva
-  return await generateWikidataQuestion(difficulty)
+  // Si no hay preguntas en caché, generar una nueva directamente
+  const question = await generateWikidataQuestion(difficulty)
+  const questionId = question.id || `${question.question}-${question.correctAnswer}`
+  usedQuestionIds.add(questionId)
+  
+  return question
+}
+
+// Función para reiniciar la sesión (limpiar preguntas usadas)
+export function resetQuestionSession(): void {
+  usedQuestionIds.clear()
+  // Mantener el caché pero limpiar las preguntas usadas
 }
 
 // Función para obtener preguntas de respaldo en caso de error
