@@ -186,7 +186,7 @@ export default function PlayPage() {
         setAnswerAnimation("incorrect")
       }
 
-      // Esperar más tiempo para que el usuario vea la respuesta correcta
+      // Esperar tiempo optimizado para que el usuario vea la respuesta correcta
       setTimeout(() => {
         if (isCorrect) {
           if (level === PRIZE_LEVELS.length - 1) {
@@ -199,7 +199,7 @@ export default function PlayPage() {
         } else {
           handleGameOver()
         }
-      }, 3000) // Aumentado a 3 segundos para dar más tiempo para ver la respuesta
+      }, 1500) // Reducido a 1.5 segundos para una transición más rápida
     }, 1000)
   }
 
@@ -404,36 +404,118 @@ export default function PlayPage() {
 
   if (gameState === "finished") {
     const finalScore = level > 0 ? PRIZE_LEVELS[level - 1] : 0
+    const isWinner = finalScore === PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
+      <div className={`flex min-h-screen flex-col items-center justify-center p-4 ${
+        isWinner 
+          ? "bg-gradient-to-b from-yellow-600 via-amber-700 to-orange-800 animate-in fade-in duration-1000" 
+          : "bg-gradient-to-b from-purple-900 to-indigo-950"
+      }`}>
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <LanguageSelector currentLocale={locale} onLocaleChange={changeLocale} />
           <WikimediaLoginButton t={t} />
         </div>
-        <Card className="w-full max-w-md border-purple-700 bg-purple-900/70 text-white">
+        
+        {/* Confetti effect for winner */}
+        {isWinner && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="animate-confetti">
+              {[...Array(50)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `-20px`,
+                    animation: `fall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <Card className={`w-full max-w-md text-white shadow-2xl ${
+          isWinner 
+            ? "border-yellow-400 bg-gradient-to-br from-yellow-500/20 to-orange-600/20 backdrop-blur-sm animate-pulse-slow" 
+            : "border-purple-700 bg-purple-900/70"
+        }`}>
           <CardHeader>
-            <CardTitle className="text-center text-2xl">
-              {finalScore === PRIZE_LEVELS[PRIZE_LEVELS.length - 1] ? t.game.congratulations : t.game.gameOver}
+            <CardTitle className={`text-center ${isWinner ? "text-3xl font-bold text-yellow-200" : "text-2xl"}`}>
+              {isWinner ? (
+                <span className="flex items-center justify-center gap-2">
+                  🎉 {t.game.congratulations} 🎉
+                </span>
+              ) : (
+                t.game.gameOver
+              )}
             </CardTitle>
-            <CardDescription className="text-center text-gray-300">
-              {finalScore === PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
+            <CardDescription className={`text-center text-lg ${
+              isWinner ? "text-yellow-100 font-semibold" : "text-gray-300"
+            }`}>
+              {isWinner
                 ? "¡Has ganado el premio máximo!"
                 : `${t.game.finalScore}: ${finalScore.toLocaleString()} ${t.leaderboard.points}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-6">
-            <div className="rounded-full bg-yellow-500 p-6">
-              <Award className="h-12 w-12 text-black" />
+            <div className={`rounded-full p-8 ${
+              isWinner 
+                ? "bg-gradient-to-br from-yellow-400 to-orange-500 animate-bounce-slow shadow-2xl" 
+                : finalScore > 0
+                  ? "bg-blue-500"
+                  : "bg-gray-500"
+            }`}>
+              <Award className={`${isWinner ? "h-16 w-16" : "h-12 w-12"} text-white`} />
             </div>
-            <p className="text-center text-gray-200">
-              {finalScore === PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
-                ? "¡Increíble! Has respondido correctamente todas las preguntas y te has convertido en millonario virtual."
-                : "Gracias por jugar. Tu puntuación ha sido registrada en la tabla de clasificación."}
-            </p>
+            
+            {isWinner ? (
+              <div className="space-y-3 text-center">
+                <p className="text-xl font-bold text-yellow-100">
+                  ¡INCREÍBLE!
+                </p>
+                <p className="text-lg text-yellow-200">
+                  Has respondido correctamente todas las {PRIZE_LEVELS.length} preguntas
+                </p>
+                <p className="text-2xl font-bold text-yellow-300 animate-pulse">
+                  💰 {PRIZE_LEVELS[PRIZE_LEVELS.length - 1].toLocaleString()} {t.leaderboard.points} 💰
+                </p>
+                <p className="text-sm text-yellow-100/80">
+                  ¡Te has convertido en un WikiMillonario virtual!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 text-center">
+                {finalScore > 0 ? (
+                  <>
+                    <p className="text-lg text-gray-200">
+                      ¡Buen intento! Llegaste al nivel {level + 1} de {PRIZE_LEVELS.length}
+                    </p>
+                    <p className="text-gray-300">
+                      Gracias por jugar. Tu puntuación ha sido registrada en la tabla de clasificación.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg text-gray-200">
+                      No alcanzaste ningún nivel esta vez
+                    </p>
+                    <p className="text-gray-300">
+                      ¡No te desanimes! Cada intento te hace más sabio. ¡Inténtalo de nuevo!
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+            
             {!user && finalScore > 0 && (
-              <div className="mt-2 rounded-md bg-purple-800/50 p-3 text-center text-sm">
-                <p className="text-yellow-400">
+              <div className={`mt-2 rounded-md p-3 text-center text-sm ${
+                isWinner 
+                  ? "bg-yellow-400/20 border border-yellow-400" 
+                  : "bg-purple-800/50"
+              }`}>
+                <p className={isWinner ? "text-yellow-100 font-semibold" : "text-yellow-400"}>
                   ¡Inicia sesión para guardar tu puntuación en la tabla de clasificación global!
                 </p>
               </div>
@@ -445,14 +527,22 @@ export default function PlayPage() {
                 setGameState("start")
                 setLevel(0)
               }}
-              className="w-full bg-yellow-500 text-black hover:bg-yellow-600"
+              className={`w-full ${
+                isWinner 
+                  ? "bg-yellow-400 text-black hover:bg-yellow-500 font-bold" 
+                  : "bg-yellow-500 text-black hover:bg-yellow-600"
+              }`}
             >
               {t.game.playAgain}
             </Button>
             <Button
               variant="outline"
               asChild
-              className="w-full border-purple-700 text-gray-300 hover:bg-purple-800/50 hover:text-white"
+              className={`w-full ${
+                isWinner 
+                  ? "border-yellow-400 text-yellow-200 hover:bg-yellow-400/10" 
+                  : "border-purple-700 text-gray-300 hover:bg-purple-800/50 hover:text-white"
+              }`}
             >
               <Link href="/leaderboard">
                 <Award className="mr-2 h-4 w-4" />
@@ -465,7 +555,11 @@ export default function PlayPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowReportDialog(true)}
-                className="w-full border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
+                className={`w-full ${
+                  isWinner 
+                    ? "border-yellow-400 text-yellow-200 hover:bg-yellow-400/10" 
+                    : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
+                }`}
               >
                 <Flag className="mr-2 h-4 w-4" />
                 {t.report.button}
@@ -713,17 +807,15 @@ export default function PlayPage() {
         </div>
       </footer>
 
-      {/* Report Answer Dialog */}
-      {gameState === "finished" && gameQuestions.length > 0 && (
-        <ReportAnswerDialog
-          isOpen={showReportDialog}
-          onClose={() => setShowReportDialog(false)}
-          questions={gameQuestions}
-          username={username}
-          userId={user?.id}
-          translations={t}
-        />
-      )}
+      {/* Report Answer Dialog - Always rendered to maintain state */}
+      <ReportAnswerDialog
+        isOpen={showReportDialog && gameState === "finished" && gameQuestions.length > 0}
+        onClose={() => setShowReportDialog(false)}
+        questions={gameQuestions}
+        username={username}
+        userId={user?.id}
+        translations={t}
+      />
     </div>
   )
 }
