@@ -199,8 +199,8 @@ export default function PlayPage() {
         } else {
           handleGameOver()
         }
-      }, 1500) // Reducido a 1.5 segundos para una transición más rápida
-    }, 1000)
+      }, 800) // Reducido a 800ms para transición más rápida (total: 1.3s)
+    }, 500) // Reducido a 500ms para respuesta más rápida
   }
 
   // Function to save score via API
@@ -807,15 +807,17 @@ export default function PlayPage() {
         </div>
       </footer>
 
-      {/* Report Answer Dialog - Always rendered to maintain state */}
-      <ReportAnswerDialog
-        isOpen={showReportDialog && gameState === "finished" && gameQuestions.length > 0}
-        onClose={() => setShowReportDialog(false)}
-        questions={gameQuestions}
-        username={username}
-        userId={user?.id}
-        translations={t}
-      />
+      {/* Report Answer Dialog - Only render when game is finished */}
+      {gameState === "finished" && gameQuestions.length > 0 && (
+        <ReportAnswerDialog
+          isOpen={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+          questions={gameQuestions}
+          username={username}
+          userId={user?.id}
+          translations={t}
+        />
+      )}
     </div>
   )
 }
