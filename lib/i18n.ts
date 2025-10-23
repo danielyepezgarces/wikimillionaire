@@ -39,6 +39,9 @@ export type Translations = {
       fiftyFifty: string
       audience: string
       phone: string
+      comingSoon: string
+      comingSoonDescription: string
+      aiCallComingSoon: string
     }
     audienceHelp: {
       title: string
@@ -293,6 +296,9 @@ export const es: Translations = {
       fiftyFifty: "50:50",
       audience: "Ayuda del Público",
       phone: "Llamada a un Amigo",
+      comingSoon: "Próximamente",
+      comingSoonDescription: "Esta ayuda estará disponible en una futura actualización.",
+      aiCallComingSoon: "La funcionalidad de llamada con IA estará disponible próximamente. Incluirá 6 agentes distintos con diferentes grados de precisión y respuestas en texto o voz.",
     },
     audienceHelp: {
       title: "Ayuda del Público",
@@ -547,6 +553,9 @@ export const en: Translations = {
       fiftyFifty: "50:50",
       audience: "Ask the Audience",
       phone: "Phone a Friend",
+      comingSoon: "Coming Soon",
+      comingSoonDescription: "This lifeline will be available in a future update.",
+      aiCallComingSoon: "AI call functionality coming soon. It will include 6 different agents with varying accuracy levels and text or voice responses.",
     },
     audienceHelp: {
       title: "Ask the Audience",
@@ -801,6 +810,9 @@ export const fr: Translations = {
       fiftyFifty: "50:50",
       audience: "L'avis du Public",
       phone: "Appel à un Ami",
+      comingSoon: "Bientôt Disponible",
+      comingSoonDescription: "Cette aide sera disponible dans une future mise à jour.",
+      aiCallComingSoon: "La fonctionnalité d'appel IA sera bientôt disponible. Elle comprendra 6 agents différents avec différents niveaux de précision et des réponses texte ou vocales.",
     },
     audienceHelp: {
       title: "L'avis du Public",
@@ -1055,6 +1067,9 @@ export const de: Translations = {
       fiftyFifty: "50:50",
       audience: "Publikumsfrage",
       phone: "Telefonjoker",
+      comingSoon: "Demnächst Verfügbar",
+      comingSoonDescription: "Diese Hilfe wird in einem zukünftigen Update verfügbar sein.",
+      aiCallComingSoon: "Die KI-Anruffunktion wird bald verfügbar sein. Sie umfasst 6 verschiedene Agenten mit unterschiedlichen Genauigkeitsstufen und Text- oder Sprachantworten.",
     },
     audienceHelp: {
       title: "Publikumsfrage",
@@ -1309,6 +1324,9 @@ export const pt: Translations = {
       fiftyFifty: "50:50",
       audience: "Ajuda da Plateia",
       phone: "Ligar para um Amigo",
+      comingSoon: "Em Breve",
+      comingSoonDescription: "Esta ajuda estará disponível em uma atualização futura.",
+      aiCallComingSoon: "A funcionalidade de chamada com IA estará disponível em breve. Incluirá 6 agentes diferentes com diferentes níveis de precisão e respostas em texto ou voz.",
     },
     audienceHelp: {
       title: "Ajuda da Plateia",

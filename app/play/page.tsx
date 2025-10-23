@@ -15,6 +15,8 @@ import { LanguageSelector } from "@/components/language-selector"
 import { WikimediaLoginButton } from "@/components/wikimedia-login-button"
 import { useAuth } from "@/contexts/auth-context"
 import { ReportAnswerDialog } from "@/components/report-answer-dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const PRIZE_LEVELS = [100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000]
 
@@ -24,6 +26,7 @@ export default function PlayPage() {
   const { playCorrectSound, playIncorrectSound } = useSound()
   const { locale, translations: t, changeLocale } = useLocale()
   const { user, loading: authLoading } = useAuth()
+  const isMobile = useIsMobile()
 
   const [username, setUsername] = useState("")
   const [gameState, setGameState] = useState<"start" | "playing" | "finished">("start")
@@ -477,77 +480,116 @@ export default function PlayPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="h-6 w-6" />
-          </Link>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-white">
-              <span className="text-yellow-400">Wiki</span>Millionaire
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                disabled={!lifelines.fiftyFifty}
-                onClick={useFiftyFifty}
-                className={`h-8 w-8 rounded-full ${!lifelines.fiftyFifty ? "opacity-50" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"}`}
-                title={t.game.lifelines.fiftyFifty}
-              >
-                50
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                disabled={!lifelines.audience}
-                onClick={useAudienceHelp}
-                className={`h-8 w-8 rounded-full ${!lifelines.audience ? "opacity-50" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"}`}
-                title={t.game.lifelines.audience}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                disabled={!lifelines.phone}
-                onClick={usePhoneAFriend}
-                className={`h-8 w-8 rounded-full ${!lifelines.phone ? "opacity-50" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"}`}
-                title={t.game.lifelines.phone}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
-              </Button>
+        {/* Header with improved mobile responsiveness */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between sm:w-auto">
+            <Link href="/" className="text-gray-300 hover:text-white">
+              <ArrowLeft className="h-6 w-6" />
+            </Link>
+            <div className="mx-4 text-center sm:mx-0">
+              <h1 className="text-xl font-bold text-white sm:text-2xl">
+                <span className="text-yellow-400">Wiki</span>Millionaire
+              </h1>
             </div>
-            <LanguageSelector currentLocale={locale} onLocaleChange={changeLocale} />
-            <WikimediaLoginButton t={t} />
+            {isMobile && (
+              <div className="flex items-center gap-2">
+                <LanguageSelector currentLocale={locale} onLocaleChange={changeLocale} />
+                <WikimediaLoginButton t={t} />
+              </div>
+            )}
+          </div>
+          
+          {/* Lifelines section - improved mobile layout */}
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            <TooltipProvider>
+              {/* 50/50 - Active */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "icon"}
+                    disabled={!lifelines.fiftyFifty}
+                    onClick={useFiftyFifty}
+                    className={`${isMobile ? 'h-9 px-3' : 'h-10 w-10'} rounded-full ${!lifelines.fiftyFifty ? "opacity-50" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"}`}
+                  >
+                    <span className="font-bold">50</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t.game.lifelines.fiftyFifty}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Audience - Coming Soon */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "icon"}
+                    disabled={true}
+                    className={`${isMobile ? 'h-9 px-3' : 'h-10 w-10'} rounded-full opacity-50 cursor-not-allowed border-gray-500 text-gray-400`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width={isMobile ? "14" : "16"}
+                      height={isMobile ? "14" : "16"}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold">{t.game.lifelines.comingSoon}</p>
+                  <p className="text-sm">{t.game.lifelines.comingSoonDescription}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Phone a Friend - Coming Soon (AI) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "icon"}
+                    disabled={true}
+                    className={`${isMobile ? 'h-9 px-3' : 'h-10 w-10'} rounded-full opacity-50 cursor-not-allowed border-gray-500 text-gray-400`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width={isMobile ? "14" : "16"}
+                      height={isMobile ? "14" : "16"}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold">{t.game.lifelines.comingSoon}</p>
+                  <p className="text-sm">{t.game.lifelines.aiCallComingSoon}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {!isMobile && (
+              <div className="flex items-center gap-2">
+                <LanguageSelector currentLocale={locale} onLocaleChange={changeLocale} />
+                <WikimediaLoginButton t={t} />
+              </div>
+            )}
           </div>
         </div>
 
