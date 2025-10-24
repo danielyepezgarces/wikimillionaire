@@ -199,8 +199,8 @@ export default function PlayPage() {
         } else {
           handleGameOver()
         }
-      }, 800) // Reducido a 800ms para transición más rápida (total: 1.3s)
-    }, 500) // Reducido a 500ms para respuesta más rápida
+      }, 600) // Reducido a 600ms para transición ultra rápida (total: 900ms)
+    }, 300) // Reducido a 300ms para respuesta instantánea
   }
 
   // Function to save score via API
@@ -228,31 +228,33 @@ export default function PlayPage() {
   const handleGameOver = useCallback(async () => {
     const finalScore = PRIZE_LEVELS[level > 0 ? level - 1 : 0]
 
-    // Save score to database via API
-    try {
-      await saveScoreToAPI(username, finalScore)
-    } catch (error) {
+    // Show final screen immediately for better UX
+    setGameState("finished")
+
+    // Save score to database in background (non-blocking)
+    saveScoreToAPI(username, finalScore).catch((error) => {
       console.error("Error saving score to database:", error)
       // Fallback to localStorage if database save fails
-      await saveScoreToLocalStorage(username, finalScore)
-    }
-
-    setGameState("finished")
+      saveScoreToLocalStorage(username, finalScore).catch((err) => {
+        console.error("Error saving to localStorage:", err)
+      })
+    })
   }, [level, username])
 
   const handleGameWin = useCallback(async () => {
     const finalScore = PRIZE_LEVELS[PRIZE_LEVELS.length - 1]
 
-    // Save score to database via API
-    try {
-      await saveScoreToAPI(username, finalScore)
-    } catch (error) {
+    // Show final screen immediately for better UX
+    setGameState("finished")
+
+    // Save score to database in background (non-blocking)
+    saveScoreToAPI(username, finalScore).catch((error) => {
       console.error("Error saving score to database:", error)
       // Fallback to localStorage if database save fails
-      await saveScoreToLocalStorage(username, finalScore)
-    }
-
-    setGameState("finished")
+      saveScoreToLocalStorage(username, finalScore).catch((err) => {
+        console.error("Error saving to localStorage:", err)
+      })
+    })
   }, [username])
 
   // Timer useEffect - must be after handleGameOver definition
