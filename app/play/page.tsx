@@ -567,6 +567,18 @@ export default function PlayPage() {
             )}
           </CardFooter>
         </Card>
+        
+        {/* Report Answer Dialog */}
+        {gameQuestions.length > 0 && (
+          <ReportAnswerDialog
+            isOpen={showReportDialog}
+            onClose={() => setShowReportDialog(false)}
+            questions={gameQuestions}
+            username={username}
+            userId={user?.id}
+            translations={t}
+          />
+        )}
       </div>
     )
   }
@@ -806,18 +818,6 @@ export default function PlayPage() {
           <p className="text-center text-sm text-gray-300">© 2025 WikiMillionaire. {t.general.credits}</p>
         </div>
       </footer>
-
-      {/* Report Answer Dialog - Only render when game is finished */}
-      {gameState === "finished" && gameQuestions.length > 0 && (
-        <ReportAnswerDialog
-          isOpen={showReportDialog}
-          onClose={() => setShowReportDialog(false)}
-          questions={gameQuestions}
-          username={username}
-          userId={user?.id}
-          translations={t}
-        />
-      )}
     </div>
   )
 }
