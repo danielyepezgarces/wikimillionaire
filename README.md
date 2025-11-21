@@ -49,40 +49,39 @@ This is a pure PHP 8.4+ implementation of WikiMillionaire, migrated from the Nex
 
 5. **Configure web server**
    
-   **Apache**: The `.htaccess` files are already configured.
+   **Apache**: The `.htaccess` file is already configured.
    
    **Nginx**: Add this to your server block:
    ```nginx
    location / {
-       try_files $uri $uri/ /public/index.php?$query_string;
+       try_files $uri $uri/ /index.php?$query_string;
    }
    ```
 
 6. **Set permissions**
    ```bash
-   chmod -R 755 public
+   chmod -R 755 .
    ```
 
 ## Directory Structure
 
 ```
 wikimillionaire/
+├── css/               # Stylesheets
+├── js/                # JavaScript files
 ├── lib/               # Core libraries
 │   ├── auth.php       # Authentication system
 │   ├── database.php   # Database abstraction
 │   ├── helpers.php    # Helper functions
 │   ├── router.php     # URL routing
 │   └── wikidata.php   # Wikidata API integration
-├── public/            # Web root
-│   ├── css/           # Stylesheets
-│   ├── js/            # JavaScript files
-│   └── index.php      # Entry point
 ├── src/
 │   └── Controllers/   # Application controllers
 ├── scripts/
 │   └── migrate.php    # Database migration
 ├── .env.example       # Environment config template
 ├── .htaccess          # Apache configuration
+├── index.php          # Entry point
 └── README.md          # This file
 ```
 
@@ -175,7 +174,7 @@ CREATE TABLE scores (
 ### Testing
 ```bash
 # Run PHP built-in server for development
-php -S localhost:8000 -t public
+php -S localhost:8000
 ```
 
 ### Debugging

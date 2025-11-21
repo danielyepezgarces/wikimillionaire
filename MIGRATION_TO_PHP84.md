@@ -36,8 +36,8 @@ Next.js Structure → PHP 8.4 Structure
 /app/api            → /src/Controllers/Api
 /components         → (inline in templates)
 /lib                → /lib
-/public             → /public
-/styles             → /public/css
+/public             → / (root)
+/styles             → /css
 package.json        → (removed - no dependencies)
 tsconfig.json       → (removed - PHP only)
 next.config.mjs     → .htaccess
@@ -90,7 +90,7 @@ $username = $user?->username ?? 'Guest';
 
 **After (PHP 8.4):**
 - Custom `Router` class in `/lib/router.php`
-- Manual route registration in `/public/index.php`
+- Manual route registration in `/index.php`
 - Pattern matching with regex
 
 ```php

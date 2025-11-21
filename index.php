@@ -10,7 +10,7 @@ declare(strict_types=1);
 session_start();
 
 // Define base paths
-define('BASE_PATH', dirname(__DIR__));
+define('BASE_PATH', __DIR__);
 define('PUBLIC_PATH', __DIR__);
 define('CONFIG_PATH', BASE_PATH . '/config');
 define('SRC_PATH', BASE_PATH . '/src');
