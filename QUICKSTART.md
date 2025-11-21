@@ -37,11 +37,11 @@ php scripts/migrate.php
 
 #### Development (PHP Built-in Server)
 ```bash
-php -S localhost:8000 -t public
+php -S localhost:8000
 ```
 
 #### Production (Apache)
-- Point document root to `php-app/public`
+- Point document root to the root directory
 - Ensure `.htaccess` is enabled
 
 #### Production (Nginx)
@@ -103,11 +103,13 @@ Should display the game interface.
 
 ```
 wikimillionaire/
+├── css/           # Stylesheets
+├── js/            # JavaScript files
 ├── lib/           # Core libraries (router, database, auth, etc.)
-├── public/        # Web root (CSS, JS, index.php)
 ├── src/           # Controllers and views
 ├── scripts/       # Database migration
 ├── .env           # Your configuration (not in git)
+├── index.php      # Entry point
 └── README.md      # Full documentation
 ```
 
@@ -121,7 +123,7 @@ wikimillionaire/
 ### "404 Not Found" on routes
 - **Apache**: Enable mod_rewrite: `sudo a2enmod rewrite`
 - **Nginx**: Check location block configuration
-- Verify `.htaccess` file exists in `public/`
+- Verify `.htaccess` file exists in root directory
 
 ### "Headers already sent"
 - Ensure no output before PHP tags
@@ -145,8 +147,8 @@ wikimillionaire/
 ## 🎯 Next Steps
 
 1. **Customize**: Edit templates in `src/Controllers/`
-2. **Style**: Modify `public/css/style.css`
-3. **Extend**: Add new routes in `public/index.php`
+2. **Style**: Modify `css/style.css`
+3. **Extend**: Add new routes in `index.php`
 4. **Deploy**: Follow README.md production guide
 
 ## 📚 More Information
@@ -160,7 +162,7 @@ wikimillionaire/
 - Use `APP_DEBUG=true` in `.env` for development
 - Session data stored in PHP's default session directory
 - Logs go to PHP error log (check php.ini for location)
-- Add custom routes by editing `public/index.php`
+- Add custom routes by editing `index.php`
 
 ## 🆘 Need Help?
 

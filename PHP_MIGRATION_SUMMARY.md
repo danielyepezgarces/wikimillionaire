@@ -49,12 +49,11 @@ php-app/
 │   ├── helpers.php           Utilities (3.3 KB)
 │   ├── router.php            URL routing (2.4 KB)
 │   └── wikidata.php          API integration (10.5 KB)
-├── public/
-│   ├── index.php             Entry point (3.0 KB)
-│   ├── css/style.css         Styling (7.6 KB)
-│   └── js/
-│       ├── app.js            General (2.3 KB)
-│       └── game.js           Game logic (6.3 KB)
+├── css/
+│   └── style.css             Styling (7.6 KB)
+├── js/
+│   ├── app.js                General (2.3 KB)
+│   └── game.js               Game logic (6.3 KB)
 ├── src/Controllers/          10 controllers
 │   ├── Api/
 │   │   ├── Auth/            4 auth endpoints
@@ -68,8 +67,9 @@ php-app/
 │   ├── LeaderboardController.php
 │   ├── ProfileController.php
 │   └── MultiplayerController.php
-└── scripts/
-    └── migrate.php           Database setup (3.4 KB)
+├── scripts/
+│   └── migrate.php           Database setup (3.4 KB)
+└── index.php                 Entry point (3.0 KB)
 ```
 
 ### Documentation (3 files)
@@ -314,10 +314,10 @@ The application can be deployed immediately on any PHP 8.4 server without build 
 
 ## Quick Reference
 
-**Location:** `/php-app` directory
-**Entry Point:** `public/index.php`
+**Location:** `/` root directory
+**Entry Point:** `index.php`
 **Documentation:** `README.md`, `QUICKSTART.md`, `MIGRATION_TO_PHP84.md`
 **Setup:** `php scripts/migrate.php`
-**Run:** `php -S localhost:8000 -t public`
+**Run:** `php -S localhost:8000`
 
 🎉 **Ready to deploy!**
