@@ -1,0 +1,468 @@
+/**
+ * WikiMillionaire - Pure CSS (No frameworks)
+ * PHP 8.4 Migration
+ */
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #e2e8f0;
+    background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header */
+.header {
+    background: rgba(88, 28, 135, 0.5);
+    border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+    padding: 1rem 0;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo,
+.logo-link {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.logo-wiki {
+    color: #fbbf24;
+}
+
+.logo-millionaire {
+    color: #fff;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.btn-primary {
+    background: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+}
+
+.btn-primary:hover {
+    background: #7c3aed;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #e2e8f0;
+    border-color: #6b21a8;
+}
+
+.btn-outline:hover {
+    background: rgba(107, 33, 168, 0.5);
+}
+
+.btn-yellow {
+    background: #fbbf24;
+    color: #000;
+    font-weight: 600;
+}
+
+.btn-yellow:hover {
+    background: #f59e0b;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+.icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Hero section */
+.hero {
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.text-yellow {
+    color: #fbbf24;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: #cbd5e1;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+}
+
+/* Features */
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.feature-card {
+    background: rgba(88, 28, 135, 0.5);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.feature-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(251, 191, 36, 0.2);
+    border-radius: 50%;
+    color: #fbbf24;
+}
+
+.feature-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.feature-description {
+    color: #cbd5e1;
+}
+
+/* Footer */
+.footer {
+    background: rgba(88, 28, 135, 0.5);
+    border-top: 1px solid rgba(147, 51, 234, 0.3);
+    padding: 1.5rem 0;
+    margin-top: 4rem;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.footer-text {
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+.footer-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.footer-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+}
+
+.footer-link:hover {
+    color: #fff;
+}
+
+/* Game page */
+.game-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-header {
+    background: rgba(88, 28, 135, 0.5);
+    border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+    padding: 1rem 0;
+}
+
+.game-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.game-info {
+    display: flex;
+    gap: 2rem;
+    font-weight: 600;
+}
+
+.game-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.question-card {
+    background: rgba(88, 28, 135, 0.5);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.question-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: #fff;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.option-btn {
+    padding: 1rem;
+    background: rgba(107, 33, 168, 0.3);
+    border: 2px solid rgba(147, 51, 234, 0.5);
+    border-radius: 0.375rem;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.option-btn:hover:not(:disabled) {
+    background: rgba(107, 33, 168, 0.5);
+    border-color: #8b5cf6;
+}
+
+.option-btn.correct {
+    background: rgba(34, 197, 94, 0.3);
+    border-color: #22c55e;
+}
+
+.option-btn.incorrect {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+}
+
+.option-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.game-controls {
+    text-align: center;
+}
+
+.lifelines {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.lifeline-btn {
+    padding: 0.75rem 1rem;
+    background: rgba(251, 191, 36, 0.2);
+    border: 2px solid #fbbf24;
+    border-radius: 0.375rem;
+    color: #fbbf24;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lifeline-btn:hover:not(:disabled) {
+    background: rgba(251, 191, 36, 0.3);
+}
+
+.lifeline-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Leaderboard */
+.leaderboard-container {
+    min-height: 100vh;
+}
+
+.main-content {
+    padding: 2rem 0;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #fff;
+}
+
+.leaderboard-table {
+    background: rgba(88, 28, 135, 0.5);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 2px solid rgba(147, 51, 234, 0.3);
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.table tr:hover {
+    background: rgba(107, 33, 168, 0.2);
+}
+
+.table tr.highlight {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.rank,
+.medal {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.player {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.score {
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 2rem;
+    color: #cbd5e1;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+    }
+
+    .game-info {
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .options-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+}
