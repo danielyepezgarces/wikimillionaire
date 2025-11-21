@@ -10,7 +10,6 @@
 ### Step 1: Configure Environment
 
 ```bash
-cd php-app
 cp .env.example .env
 ```
 
@@ -103,7 +102,7 @@ Should display the game interface.
 ## 📁 Directory Structure
 
 ```
-php-app/
+wikimillionaire/
 ├── lib/           # Core libraries (router, database, auth, etc.)
 ├── public/        # Web root (CSS, JS, index.php)
 ├── src/           # Controllers and views
@@ -153,8 +152,8 @@ php-app/
 ## 📚 More Information
 
 - Full documentation: `README.md`
-- Migration details: `../MIGRATION_TO_PHP84.md`
-- Original Next.js version: `../` (parent directory)
+- Migration details: `MIGRATION_TO_PHP84.md`
+- Migration summary: `PHP_MIGRATION_SUMMARY.md`
 
 ## 💡 Tips
 

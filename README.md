@@ -28,7 +28,7 @@ This is a pure PHP 8.4+ implementation of WikiMillionaire, migrated from the Nex
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd php-app
+   cd wikimillionaire
    ```
 
 2. **Configure environment**
@@ -66,8 +66,7 @@ This is a pure PHP 8.4+ implementation of WikiMillionaire, migrated from the Nex
 ## Directory Structure
 
 ```
-php-app/
-├── config/            # Configuration files
+wikimillionaire/
 ├── lib/               # Core libraries
 │   ├── auth.php       # Authentication system
 │   ├── database.php   # Database abstraction
@@ -78,9 +77,13 @@ php-app/
 │   ├── css/           # Stylesheets
 │   ├── js/            # JavaScript files
 │   └── index.php      # Entry point
-└── src/
-    ├── Controllers/   # Application controllers
-    └── Views/         # View templates
+├── src/
+│   └── Controllers/   # Application controllers
+├── scripts/
+│   └── migrate.php    # Database migration
+├── .env.example       # Environment config template
+├── .htaccess          # Apache configuration
+└── README.md          # This file
 ```
 
 ## Migration from Next.js
