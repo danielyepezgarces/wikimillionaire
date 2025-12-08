@@ -241,6 +241,8 @@ function showLoadingState() {
    questionText.textContent = 'Loading question...';
    questionText.classList.add('text-gray-400', 'animate-pulse');
    document.getElementById('answerOptions').innerHTML = '';
+   // Hide previous question image
+   document.getElementById('questionImage').classList.add('hidden');
 }
 
 // Render answer options
@@ -310,8 +312,12 @@ function handleAnswerResult(result, buttonElement) {
          if (result.gameWon) {
             showGameOver(true, result.finalScore, result.message);
          } else {
+            // Update game state
             gameState.level = result.level;
             gameState.score = result.score;
+            // Update prize levels display
+            renderPrizeLevels();
+            // Load next question
             loadNextQuestion();
          }
       }, 2000);
@@ -457,6 +463,8 @@ function showGameOver(won, finalScore, message) {
 // Show error message
 function showError(message, isCritical = false) {
    if (isCritical) {
+      // Stop timer if running
+      stopTimer();
       // Show game over modal with error
       const modal = document.getElementById('gameOverModal');
       const title = document.getElementById('gameOverTitle');
@@ -465,6 +473,7 @@ function showError(message, isCritical = false) {
       
       title.textContent = 'Error';
       messageEl.textContent = message;
+      // Use the actual score from game state
       scoreEl.textContent = `Current Score: ${formatNumber(gameState.score || 0)} points`;
       
       modal.classList.remove('hidden');
