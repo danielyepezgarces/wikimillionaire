@@ -21,8 +21,8 @@ A "Who Wants to Be a Millionaire?" style quiz game built with PHP and styled wit
 wikimillionairephp/
 ├── index.php              # Homepage entry point
 ├── play.php               # Game/play page entry point (registration)
-├── game-play.php          # NEW: Active game page with PHP backend
-├── game-api.php           # NEW: REST API endpoint for game actions
+├── game.php          # NEW: Active game page with PHP backend
+├── api.php           # NEW: REST API endpoint for game actions
 ├── leaderboard.php        # Leaderboard page entry point
 ├── test-api.php           # NEW: Manual testing script for game logic
 ├── composer.json          # NEW: PHP autoloading configuration
@@ -34,7 +34,7 @@ wikimillionairephp/
     ├── layout.php         # Base layout wrapper
     ├── index.php          # Homepage content template
     ├── play.php           # Play page content template
-    ├── game-play.php      # NEW: Interactive game template with JS
+    ├── game.php      # NEW: Interactive game template with JS
     ├── play-game.php      # OLD: Static game template (kept for reference)
     ├── leaderboard.php    # Leaderboard content template
     └── partials/
@@ -131,7 +131,7 @@ php -S localhost:8000
 
 # Open in browser
 # Navigate to http://localhost:8000/index.php
-# Play game at http://localhost:8000/game-play.php
+# Play game at http://localhost:8000/game.php
 ```
 
 ### Production Deployment
@@ -147,7 +147,7 @@ php -S localhost:8000
 
 - **Homepage** (`index.php`): Game introduction and features
 - **Play** (`play.php`): Player registration and game start
-- **Game Play** (`game-play.php`): Interactive game with PHP backend ⭐ NEW
+- **Game Play** (`game.php`): Interactive game with PHP backend ⭐ NEW
 - **Leaderboard** (`leaderboard.php`): Rankings and scores
 
 All navigation links are functional and use relative paths.
@@ -173,14 +173,14 @@ The game now uses a server-side PHP backend for all game logic:
    - Leaderboard functionality
    - Timer validation (30 seconds per question)
 
-3. **REST API** (`game-api.php`)
-   - `POST /game-api.php?action=start` - Start new game
-   - `GET /game-api.php?action=getState` - Get current game state
-   - `GET /game-api.php?action=getQuestion` - Get next question
-   - `POST /game-api.php?action=checkAnswer` - Submit answer
-   - `POST /game-api.php?action=useFiftyFifty` - Use 50:50 lifeline
-   - `POST /game-api.php?action=quit` - Quit and save score
-   - `GET /game-api.php?action=getLeaderboard` - Get top scores
+3. **REST API** (`api.php`)
+   - `POST /api.php?action=start` - Start new game
+   - `GET /api.php?action=getState` - Get current game state
+   - `GET /api.php?action=getQuestion` - Get next question
+   - `POST /api.php?action=checkAnswer` - Submit answer
+   - `POST /api.php?action=useFiftyFifty` - Use 50:50 lifeline
+   - `POST /api.php?action=quit` - Quit and save score
+   - `GET /api.php?action=getLeaderboard` - Get top scores
 
 ### Question Types by Difficulty
 

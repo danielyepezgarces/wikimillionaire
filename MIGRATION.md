@@ -16,13 +16,13 @@ The PHP backend provides the same functionality as the TypeScript implementation
 ### For New Projects
 Simply use the new game page:
 ```
-http://your-domain/game-play.php
+http://your-domain/game.php
 ```
 
 ### For Existing Projects
 1. Keep your existing pages as-is
 2. Add the new game page alongside them
-3. Update links to point to `game-play.php` instead of `play-game.php`
+3. Update links to point to `game.php` instead of `play-game.php`
 
 ## File Structure Changes
 
@@ -40,10 +40,10 @@ src/
 └── Game/
     ├── Wikidata.php        # Server-side PHP logic
     └── GameService.php     # Game workflow management
-game-api.php                # REST API endpoint
-game-play.php               # Entry point
+api.php                # REST API endpoint
+game.php               # Entry point
 templates/
-└── game-play.php           # Interactive template with JavaScript
+└── game.php           # Interactive template with JavaScript
 ```
 
 ## API Mapping
@@ -102,7 +102,7 @@ let gameState = {
 **PHP (new):**
 ```javascript
 // POST to API
-const response = await fetch('/game-api.php?action=start', {
+const response = await fetch('/api.php?action=start', {
     method: 'POST',
     body: 'playerName=Player1'
 });
@@ -122,7 +122,7 @@ const question = await getRandomQuestion(level);
 **PHP (new):**
 ```javascript
 // GET from API
-const response = await fetch('/game-api.php?action=getQuestion');
+const response = await fetch('/api.php?action=getQuestion');
 const result = await response.json();
 const question = result.data;
 ```
@@ -140,7 +140,7 @@ if (userAnswer === question.correctAnswer) {
 **PHP (new):**
 ```javascript
 // Server-side validation (secure)
-const response = await fetch('/game-api.php?action=checkAnswer', {
+const response = await fetch('/api.php?action=checkAnswer', {
     method: 'POST',
     body: `answer=${encodeURIComponent(userAnswer)}`
 });
@@ -187,7 +187,7 @@ import { getRandomQuestion } from './lib/wikidata.ts';
 <script>
 // No imports needed
 async function loadQuestion() {
-    const response = await fetch('/game-api.php?action=getQuestion');
+    const response = await fetch('/api.php?action=getQuestion');
     const result = await response.json();
     displayQuestion(result.data);
 }
@@ -231,7 +231,7 @@ try {
 
 ### New Approach
 ```javascript
-const response = await fetch('/game-api.php?action=getQuestion');
+const response = await fetch('/api.php?action=getQuestion');
 const result = await response.json();
 
 if (!result.success) {
@@ -313,7 +313,7 @@ php test-api.php
 # Start dev server
 php -S localhost:8000
 
-# Visit http://localhost:8000/game-play.php
+# Visit http://localhost:8000/game.php
 ```
 
 ### Step 2: Update Your Templates
@@ -330,7 +330,7 @@ import { getRandomQuestion } from './templates/lib/wikidata.ts';
 ```html
 <script>
 async function getQuestion() {
-    const res = await fetch('/game-api.php?action=getQuestion');
+    const res = await fetch('/api.php?action=getQuestion');
     return (await res.json()).data;
 }
 </script>
@@ -344,7 +344,7 @@ Change links from:
 
 To:
 ```html
-<a href="/game-play.php">Play</a>
+<a href="/game.php">Play</a>
 ```
 
 ### Step 4: Deploy
