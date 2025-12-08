@@ -1,6 +1,6 @@
-<!-- Game Play Template with PHP Backend Integration -->
-<div class="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
-   <div class="container mx-auto max-w-4xl">
+<!-- Game Template with PHP Backend Integration -->
+<div class="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4 overflow-hidden">
+   <div class="container mx-auto max-w-4xl flex flex-col h-full">
       <!-- Header -->
       <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
          <div class="flex items-center justify-between sm:w-auto">
@@ -59,28 +59,28 @@
       </div>
 
       <!-- Question Card -->
-      <div class="space-y-6">
+      <div class="space-y-4 flex-shrink-0">
          <div class="rounded-lg border shadow-sm border-purple-700 bg-purple-900/70 text-white">
             <div class="flex flex-col space-y-1.5 p-6">
                <div id="questionText" class="font-semibold tracking-tight text-xl">
                   Loading question...
                </div>
                <div id="questionImage" class="mt-4 hidden">
-                  <img src="" alt="Question image" class="max-w-full h-auto rounded-lg" />
+                  <img src="" alt="Question image" class="max-w-full rounded-lg object-contain" style="max-height: 200px;" />
                </div>
             </div>
          </div>
 
          <!-- Answer Options -->
-         <div id="answerOptions" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+         <div id="answerOptions" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <!-- Options will be inserted here by JavaScript -->
          </div>
       </div>
 
       <!-- Prize Levels -->
-      <div class="mt-8">
-         <h3 class="mb-2 text-lg font-semibold text-white">Prize Levels</h3>
-         <div id="prizeLevels" class="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-5">
+      <div class="mt-4 mb-4 flex-shrink-0">
+         <h3 class="mb-2 text-sm font-semibold text-white">Prize Levels</h3>
+         <div id="prizeLevels" class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-5 text-xs">
             <!-- Prize levels will be rendered here -->
          </div>
       </div>
@@ -92,7 +92,7 @@
             <p id="gameOverMessage" class="text-gray-300 mb-2"></p>
             <p id="gameOverScore" class="text-yellow-400 text-xl font-bold mb-6"></p>
             <div class="flex gap-4">
-               <a href="/game-play.php" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded text-center">
+               <a href="/game.php" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded text-center">
                   Play Again
                </a>
                <a href="/" class="flex-1 bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded text-center">
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function initGame() {
    try {
       // Start new game
-      const response = await fetch('/game-api.php?action=start', {
+      const response = await fetch('/api.php?action=start', {
          method: 'POST',
          headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -165,7 +165,7 @@ async function initGame() {
 // Load next question
 async function loadNextQuestion() {
    try {
-      const response = await fetch('/game-api.php?action=getQuestion');
+      const response = await fetch('/api.php?action=getQuestion');
       const result = await response.json();
       
       if (result.success) {
@@ -235,7 +235,7 @@ async function selectAnswer(answer, buttonElement) {
    buttonElement.classList.add('bg-yellow-500/30', 'border-yellow-500');
    
    try {
-      const response = await fetch('/game-api.php?action=checkAnswer', {
+      const response = await fetch('/api.php?action=checkAnswer', {
          method: 'POST',
          headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -331,7 +331,7 @@ async function handleTimeout() {
    });
    
    try {
-      const response = await fetch('/game-api.php?action=checkAnswer', {
+      const response = await fetch('/api.php?action=checkAnswer', {
          method: 'POST',
          headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -355,7 +355,7 @@ document.getElementById('fiftyFiftyBtn').addEventListener('click', async functio
    if (this.disabled) return;
    
    try {
-      const response = await fetch('/game-api.php?action=useFiftyFifty', {
+      const response = await fetch('/api.php?action=useFiftyFifty', {
          method: 'POST'
       });
       
