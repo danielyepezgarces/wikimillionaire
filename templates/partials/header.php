@@ -19,6 +19,9 @@ $pageTitle = $pageTitle ?? 'WikiMillionaire';
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
     
     <!-- Tailwind CSS CDN -->
+    <!-- Note: For production use, consider using the Tailwind CLI to generate a local CSS file
+         or add SRI (Subresource Integrity) hash for CDN security. The CDN approach is used 
+         here for rapid development and ease of setup. -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="antialiased">

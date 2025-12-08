@@ -27,7 +27,8 @@ include __DIR__ . '/partials/header.php';
 if (file_exists($contentTemplate)) {
     include $contentTemplate;
 } else {
-    echo '<div class="p-4 text-red-500">Error: Template file not found: ' . htmlspecialchars($contentTemplate) . '</div>';
+    // Generic error message without exposing file paths
+    echo '<div class="p-4 text-red-500">Error: Page not found. Please try again.</div>';
 }
 
 // Include footer partial
