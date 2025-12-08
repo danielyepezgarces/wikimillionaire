@@ -136,7 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize game
-async function initGame() {
+async function initGame(retryCount = 0) {
+   const MAX_RETRIES = 3;
+   
    try {
       // Start new game
       const response = await fetch('/api.php?action=start', {
@@ -154,16 +156,32 @@ async function initGame() {
          renderPrizeLevels();
          loadNextQuestion();
       } else {
-         showError('Failed to start game');
+         console.error('Failed to start game:', result.error);
+         if (retryCount < MAX_RETRIES) {
+            setTimeout(() => initGame(retryCount + 1), 1000);
+         } else {
+            showError('Failed to start game. Please refresh the page.', true);
+         }
       }
    } catch (error) {
       console.error('Error initializing game:', error);
-      showError('Failed to connect to game server');
+      if (retryCount < MAX_RETRIES) {
+         setTimeout(() => initGame(retryCount + 1), 1000);
+      } else {
+         showError('Failed to connect to game server. Please refresh the page.', true);
+      }
    }
 }
 
 // Load next question
-async function loadNextQuestion() {
+async function loadNextQuestion(retryCount = 0) {
+   const MAX_RETRIES = 3;
+   
+   // Show loading state
+   if (retryCount === 0) {
+      showLoadingState();
+   }
+   
    try {
       const response = await fetch('/api.php?action=getQuestion');
       const result = await response.json();
@@ -173,17 +191,34 @@ async function loadNextQuestion() {
          displayQuestion(result.data);
          startTimer();
       } else {
-         showError('Failed to load question');
+         console.error('Failed to load question:', result.error);
+         if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+            document.getElementById('questionText').textContent = `Loading question... (Retry ${retryCount + 1}/${MAX_RETRIES})`;
+            setTimeout(() => loadNextQuestion(retryCount + 1), 1000);
+         } else {
+            showError('Unable to load question. Please try again.', true);
+         }
       }
    } catch (error) {
       console.error('Error loading question:', error);
-      showError('Failed to load question');
+      if (retryCount < MAX_RETRIES) {
+         console.log(`Retrying... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+         document.getElementById('questionText').textContent = `Loading question... (Retry ${retryCount + 1}/${MAX_RETRIES})`;
+         setTimeout(() => loadNextQuestion(retryCount + 1), 1000);
+      } else {
+         showError('Connection error. Please refresh the page.', true);
+      }
    }
 }
 
 // Display question
 function displayQuestion(questionData) {
-   document.getElementById('questionText').textContent = questionData.question;
+   // Clear any loading state
+   const questionText = document.getElementById('questionText');
+   questionText.textContent = questionData.question;
+   questionText.classList.remove('text-gray-400', 'animate-pulse');
+   
    document.getElementById('levelDisplay').textContent = `Level: ${questionData.level} / 15`;
    document.getElementById('prizeDisplay').textContent = `Prize: ${formatNumber(questionData.prize)} points`;
    
@@ -198,6 +233,14 @@ function displayQuestion(questionData) {
    
    // Render answer options
    renderAnswerOptions(questionData.options);
+}
+
+// Show loading state
+function showLoadingState() {
+   const questionText = document.getElementById('questionText');
+   questionText.textContent = 'Loading question...';
+   questionText.classList.add('text-gray-400', 'animate-pulse');
+   document.getElementById('answerOptions').innerHTML = '';
 }
 
 // Render answer options
@@ -412,8 +455,23 @@ function showGameOver(won, finalScore, message) {
 }
 
 // Show error message
-function showError(message) {
-   alert(message);
+function showError(message, isCritical = false) {
+   if (isCritical) {
+      // Show game over modal with error
+      const modal = document.getElementById('gameOverModal');
+      const title = document.getElementById('gameOverTitle');
+      const messageEl = document.getElementById('gameOverMessage');
+      const scoreEl = document.getElementById('gameOverScore');
+      
+      title.textContent = 'Error';
+      messageEl.textContent = message;
+      scoreEl.textContent = `Current Score: ${formatNumber(gameState.score || 0)} points`;
+      
+      modal.classList.remove('hidden');
+   } else {
+      // Show temporary alert
+      alert(message);
+   }
 }
 
 // Format number with commas
