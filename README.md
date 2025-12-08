@@ -10,18 +10,32 @@ A "Who Wants to Be a Millionaire?" style quiz game built with PHP and styled wit
 - 🔄 Clean PHP architecture with reusable components
 - 📊 Leaderboard system
 - 🎮 Interactive gameplay
+- 🌐 **NEW:** PHP backend integration with Wikidata API
+- 🧠 **NEW:** Multiple question types (11 types) with varying difficulty
+- 🎲 **NEW:** Smart fallback questions when API is unavailable
+- 💡 **NEW:** Game lifelines (50:50 implemented)
 
 ## Project Structure
 
 ```
 wikimillionairephp/
 ├── index.php              # Homepage entry point
-├── play.php               # Game/play page entry point
+├── play.php               # Game/play page entry point (registration)
+├── game-play.php          # NEW: Active game page with PHP backend
+├── game-api.php           # NEW: REST API endpoint for game actions
 ├── leaderboard.php        # Leaderboard page entry point
+├── test-api.php           # NEW: Manual testing script for game logic
+├── composer.json          # NEW: PHP autoloading configuration
+├── src/                   # NEW: PHP backend source code
+│   └── Game/
+│       ├── Wikidata.php   # Wikidata API integration & question generation
+│       └── GameService.php # Game workflow & session management
 └── templates/
     ├── layout.php         # Base layout wrapper
     ├── index.php          # Homepage content template
     ├── play.php           # Play page content template
+    ├── game-play.php      # NEW: Interactive game template with JS
+    ├── play-game.php      # OLD: Static game template (kept for reference)
     ├── leaderboard.php    # Leaderboard content template
     └── partials/
         ├── header.php     # HTML head with Tailwind CDN
@@ -95,7 +109,19 @@ The project uses Tailwind CSS via CDN (included in `templates/partials/header.ph
 
 ### Requirements
 - PHP 7.4 or higher
+- Composer (for autoloading)
 - Web server (Apache, Nginx, or PHP built-in server)
+- Internet connection (for Wikidata API, optional - has offline fallback)
+
+### Installation
+
+```bash
+# Install dependencies
+composer install
+
+# Test the PHP backend
+php test-api.php
+```
 
 ### Development Server
 
@@ -105,22 +131,132 @@ php -S localhost:8000
 
 # Open in browser
 # Navigate to http://localhost:8000/index.php
+# Play game at http://localhost:8000/game-play.php
 ```
 
 ### Production Deployment
 
 1. Upload all files to your web server
-2. Ensure PHP is enabled
-3. Configure your web server to serve the root directory
-4. Set `index.php` as the default document
+2. Run `composer install --no-dev` on the server
+3. Ensure PHP is enabled
+4. Configure your web server to serve the root directory
+5. Set `index.php` as the default document
+6. Ensure session directory is writable
 
 ## Navigation
 
 - **Homepage** (`index.php`): Game introduction and features
 - **Play** (`play.php`): Player registration and game start
+- **Game Play** (`game-play.php`): Interactive game with PHP backend ⭐ NEW
 - **Leaderboard** (`leaderboard.php`): Rankings and scores
 
 All navigation links are functional and use relative paths.
+
+## PHP Backend Architecture
+
+### Game Workflow
+
+The game now uses a server-side PHP backend for all game logic:
+
+1. **Wikidata Integration** (`src/Game/Wikidata.php`)
+   - Queries Wikidata SPARQL endpoint for real trivia questions
+   - 11 different question types: capitals, elements, authors, flags, artworks, landmarks, mountains, inventions, population, area, birthdates
+   - Automatic retry logic with exponential backoff
+   - Fallback to backup questions if Wikidata is unavailable
+   - Image support for visual questions (flags, artworks, landmarks)
+
+2. **Game Service** (`src/Game/GameService.php`)
+   - Session-based game state management
+   - Score tracking and level progression (15 levels)
+   - Safe haven checkpoints (levels 5 and 10)
+   - Lifeline management (50:50 implemented)
+   - Leaderboard functionality
+   - Timer validation (30 seconds per question)
+
+3. **REST API** (`game-api.php`)
+   - `POST /game-api.php?action=start` - Start new game
+   - `GET /game-api.php?action=getState` - Get current game state
+   - `GET /game-api.php?action=getQuestion` - Get next question
+   - `POST /game-api.php?action=checkAnswer` - Submit answer
+   - `POST /game-api.php?action=useFiftyFifty` - Use 50:50 lifeline
+   - `POST /game-api.php?action=quit` - Quit and save score
+   - `GET /game-api.php?action=getLeaderboard` - Get top scores
+
+### Question Types by Difficulty
+
+**Easy (Levels 1-4):**
+- Capital cities
+- Book authors
+- Chemical elements
+- Country flags (with images)
+- Famous artworks (with images)
+
+**Medium (Levels 5-9):**
+- Country areas
+- Mountain heights/locations
+- Famous inventions
+- Birth years of famous people
+- Famous landmarks (with images)
+
+**Hard (Levels 10-15):**
+- Country populations
+- Advanced inventions
+- Challenging mountain facts
+- Complex element questions
+
+### Environment Variables
+
+The Wikidata module supports configuration through constants:
+
+- `WIKIDATA_ENDPOINT`: SPARQL endpoint URL (default: https://query.wikidata.org/sparql)
+- `USER_AGENT`: User agent for API requests
+- `TIMEOUT_SECONDS`: HTTP request timeout (default: 10)
+- `MAX_RETRIES`: Number of retry attempts (default: 2)
+
+### Migration from TypeScript
+
+The PHP backend is a complete port of `templates/lib/wikidata.ts`:
+
+| TypeScript Function | PHP Equivalent | Status |
+|---------------------|----------------|--------|
+| `getRandomQuestion()` | `Wikidata::getRandomQuestion()` | ✅ Ported |
+| `fetchFromWikidata()` | `Wikidata::fetchFromWikidata()` | ✅ Ported |
+| `generateCapitalQuestion()` | `Wikidata::generateCapitalQuestion()` | ✅ Ported |
+| `generateBirthdateQuestion()` | `Wikidata::generateBirthdateQuestion()` | ✅ Ported |
+| `generatePopulationQuestion()` | `Wikidata::generatePopulationQuestion()` | ✅ Ported |
+| `generateAreaQuestion()` | `Wikidata::generateAreaQuestion()` | ✅ Ported |
+| `generateInventionQuestion()` | `Wikidata::generateInventionQuestion()` | ✅ Ported |
+| `generateElementQuestion()` | `Wikidata::generateElementQuestion()` | ✅ Ported |
+| `generateAuthorQuestion()` | `Wikidata::generateAuthorQuestion()` | ✅ Ported |
+| `generateMountainQuestion()` | `Wikidata::generateMountainQuestion()` | ✅ Ported |
+| `generateFlagQuestion()` | `Wikidata::generateFlagQuestion()` | ✅ Ported |
+| `generateArtworkQuestion()` | `Wikidata::generateArtworkQuestion()` | ✅ Ported |
+| `generateLandmarkQuestion()` | `Wikidata::generateLandmarkQuestion()` | ✅ Ported |
+| `getBackupQuestion()` | `Wikidata::getBackupQuestion()` | ✅ Ported |
+| `formatPopulation()` | `Wikidata::formatPopulation()` | ✅ Ported |
+| `getCommonsImageUrl()` | `Wikidata::getCommonsImageUrl()` | ✅ Ported |
+
+**Key Differences:**
+- PHP uses `file_get_contents()` with stream contexts instead of `fetch()`
+- Error handling uses exceptions instead of try-catch with async/await
+- Session management is built-in to PHP (no localStorage needed)
+- Number formatting uses `number_format()` instead of `toLocaleString()`
+
+### Testing
+
+Run the test suite to validate the implementation:
+
+```bash
+php test-api.php
+```
+
+This will test:
+- ✅ Wikidata question generation (with fallback)
+- ✅ Game service initialization
+- ✅ Question retrieval
+- ✅ Answer validation (correct/incorrect)
+- ✅ Lifeline functionality (50:50)
+- ✅ Leaderboard storage
 
 ## Customization
 
