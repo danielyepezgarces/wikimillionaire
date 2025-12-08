@@ -5,8 +5,7 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Daniel Yepez Garces",
-            "email": "daniel@example.com"
+            "name": "Daniel Yepez Garces"
         }
     ],
     "require": {

@@ -74,7 +74,7 @@ class Wikidata
                     ]
                 ]);
                 
-                $response = @file_get_contents($url, false, $context);
+                $response = file_get_contents($url, false, $context);
                 
                 if ($response === false) {
                     $error = error_get_last();
@@ -205,8 +205,9 @@ class Wikidata
             throw new \Exception('No data found for capital question');
         }
         
-        $randomIndex = array_rand(array_slice($results, 0, min(10, count($results))));
-        $selectedCountry = $results[$randomIndex];
+        $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
+        $randomIndex = array_rand($slicedResults);
+        $selectedCountry = $slicedResults[$randomIndex];
         
         $question = '¿Cuál es la capital de ' . $selectedCountry['countryLabel']['value'] . '?';
         $correctAnswer = $selectedCountry['capitalLabel']['value'];
@@ -307,8 +308,9 @@ class Wikidata
             throw new \Exception('No data found for population question');
         }
         
-        $randomIndex = array_rand(array_slice($results, 0, min(10, count($results))));
-        $selectedCountry = $results[$randomIndex];
+        $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
+        $randomIndex = array_rand($slicedResults);
+        $selectedCountry = $slicedResults[$randomIndex];
         
         $question = '¿Cuál es aproximadamente la población de ' . $selectedCountry['countryLabel']['value'] . '?';
         
@@ -372,8 +374,9 @@ class Wikidata
             throw new \Exception('No data found for area question');
         }
         
-        $randomIndex = array_rand(array_slice($results, 0, min(10, count($results))));
-        $selectedCountry = $results[$randomIndex];
+        $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
+        $randomIndex = array_rand($slicedResults);
+        $selectedCountry = $slicedResults[$randomIndex];
         
         $question = '¿Cuál es aproximadamente el área de ' . $selectedCountry['countryLabel']['value'] . '?';
         
@@ -472,8 +475,9 @@ class Wikidata
             throw new \Exception('No data found for element question');
         }
         
-        $randomIndex = array_rand(array_slice($results, 0, min(15, count($results))));
-        $selectedElement = $results[$randomIndex];
+        $slicedResults = array_values(array_slice($results, 0, min(15, count($results))));
+        $randomIndex = array_rand($slicedResults);
+        $selectedElement = $slicedResults[$randomIndex];
         
         $askForSymbol = (rand(0, 1) === 1);
         
@@ -674,8 +678,9 @@ class Wikidata
             throw new \Exception('No data found for flag question');
         }
         
-        $randomIndex = array_rand(array_slice($results, 0, min(10, count($results))));
-        $selectedCountry = $results[$randomIndex];
+        $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
+        $randomIndex = array_rand($slicedResults);
+        $selectedCountry = $slicedResults[$randomIndex];
         
         $question = '¿A qué país pertenece esta bandera?';
         $correctAnswer = $selectedCountry['countryLabel']['value'];
