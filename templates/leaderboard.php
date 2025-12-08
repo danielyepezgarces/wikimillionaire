@@ -1,6 +1,6 @@
 <div class="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4">
     <div class="container mx-auto max-w-4xl">
-        <div class="mb-6 flex items-center justify-between"><a class="text-gray-300 hover:text-white" href="/"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left h-6 w-6">
+        <div class="mb-6 flex items-center justify-between"><a class="text-gray-300 hover:text-white" href="index.php"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left h-6 w-6">
                     <path d="m12 19-7-7 7-7"></path>
                     <path d="M19 12H5"></path>
                 </svg></a>
