@@ -1,0 +1,24 @@
+{
+    "name": "danielyepezgarces/wikimillionairephp",
+    "description": "WikiMillionaire - A trivia game using Wikidata",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Daniel Yepez Garces"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "WikiMillionaire\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WikiMillionaire\\Tests\\": "tests/"
+        }
+    }
+}
