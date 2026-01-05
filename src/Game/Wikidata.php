@@ -269,7 +269,7 @@ class Wikidata
                 BIND(YEAR(?birthdate) as ?birthyear) .
                 FILTER(?precision >= 9)
                 FILTER(?birthyear > 1700)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
@@ -282,12 +282,21 @@ class Wikidata
             throw new \Exception('No data found for birthdate question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['personLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for birthdate question');
+        }
+        
         $randomIndex = array_rand($results);
         $selectedPerson = $results[$randomIndex];
         
         $birthYear = intval($selectedPerson['birthyear']['value']);
         
-        $question = '¿En qué año nació ' . $selectedPerson['personLabel']['value'] . '?';
+        $question = $this->languageService->get('q_birth_year', [
+            'person' => $selectedPerson['personLabel']['value']
+        ]);
         $correctAnswer = strval($birthYear);
         
         $incorrectOptions = [
@@ -318,7 +327,7 @@ class Wikidata
                 ?country wdt:P1082 ?population .
                 ?country wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 50)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 15
@@ -331,11 +340,20 @@ class Wikidata
             throw new \Exception('No data found for population question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['countryLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for population question');
+        }
+        
         $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
         $randomIndex = array_rand($slicedResults);
         $selectedCountry = $slicedResults[$randomIndex];
         
-        $question = '¿Cuál es aproximadamente la población de ' . $selectedCountry['countryLabel']['value'] . '?';
+        $question = $this->languageService->get('q_population', [
+            'country' => $selectedCountry['countryLabel']['value']
+        ]);
         
         $population = intval($selectedCountry['population']['value']);
         $difficultyFactor = ($difficulty === 'easy') ? 10000000 : 1000000;
@@ -365,9 +383,9 @@ class Wikidata
     private function formatPopulation(float $population): string
     {
         if ($population >= 1000000) {
-            return number_format($population / 1000000, 1) . ' millones';
+            return number_format($population / 1000000, 1) . ' ' . $this->languageService->get('unit_million');
         } elseif ($population >= 1000) {
-            return number_format($population / 1000, 1) . ' mil';
+            return number_format($population / 1000, 1) . ' ' . $this->languageService->get('unit_thousand');
         } else {
             return strval(intval($population));
         }
@@ -384,7 +402,7 @@ class Wikidata
                 ?country wdt:P2046 ?area .
                 ?country wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 50)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 15
@@ -436,7 +454,7 @@ class Wikidata
                 ?inventor wdt:P31 wd:Q5 .
                 ?invention wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 20)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
@@ -485,7 +503,7 @@ class Wikidata
                 ?element wdt:P31 wd:Q11344 .
                 ?element wdt:P246 ?symbol .
                 FILTER(STRLEN(?symbol) <= 2)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 20
@@ -498,6 +516,13 @@ class Wikidata
             throw new \Exception('No data found for element question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['elementLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for element question');
+        }
+        
         $slicedResults = array_values(array_slice($results, 0, min(15, count($results))));
         $randomIndex = array_rand($slicedResults);
         $selectedElement = $slicedResults[$randomIndex];
@@ -505,7 +530,9 @@ class Wikidata
         $askForSymbol = (rand(0, 1) === 1);
         
         if ($askForSymbol) {
-            $question = '¿Cuál es el símbolo químico del ' . $selectedElement['elementLabel']['value'] . '?';
+            $question = $this->languageService->get('q_what_symbol', [
+                'element' => $selectedElement['elementLabel']['value']
+            ]);
             $correctAnswer = $selectedElement['symbol']['value'];
             
             $incorrectOptions = array_slice(
@@ -527,7 +554,9 @@ class Wikidata
                 'id' => 'element-symbol-' . basename($selectedElement['element']['value'])
             ];
         } else {
-            $question = '¿Qué elemento químico tiene el símbolo "' . $selectedElement['symbol']['value'] . '"?';
+            $question = $this->languageService->get('q_what_element', [
+                'symbol' => $selectedElement['symbol']['value']
+            ]);
             $correctAnswer = $selectedElement['elementLabel']['value'];
             
             $incorrectOptions = array_slice(
@@ -563,7 +592,7 @@ class Wikidata
                 ?author wdt:P31 wd:Q5 .
                 ?book wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 30)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
@@ -576,10 +605,19 @@ class Wikidata
             throw new \Exception('No data found for author question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['bookLabel', 'authorLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for author question');
+        }
+        
         $randomIndex = array_rand($results);
         $selectedBook = $results[$randomIndex];
         
-        $question = '¿Quién escribió "' . $selectedBook['bookLabel']['value'] . '"?';
+        $question = $this->languageService->get('q_who_wrote', [
+            'book' => $selectedBook['bookLabel']['value']
+        ]);
         $correctAnswer = $selectedBook['authorLabel']['value'];
         
         $otherAuthors = array_filter(
@@ -614,7 +652,7 @@ class Wikidata
                 ?mountain wdt:P17 ?country .
                 ?mountain wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 20)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
@@ -688,7 +726,7 @@ class Wikidata
                 ?country wdt:P41 ?flag .
                 ?country wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 50)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 15
@@ -745,7 +783,7 @@ class Wikidata
                 ?creator wdt:P31 wd:Q5 .
                 ?artwork wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 20)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
@@ -801,7 +839,7 @@ class Wikidata
                 ?landmark wdt:P18 ?image .
                 ?landmark wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 30)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 10
