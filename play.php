@@ -17,6 +17,10 @@ if (!isset($_SESSION['playerName'])) {
     $_SESSION['playerName'] = 'Guest';
 }
 
+// Generate a game access token to prevent direct access to game.php
+$_SESSION['game_access_token'] = bin2hex(random_bytes(16));
+$_SESSION['game_access_time'] = time();
+
 // Set page title
 $pageTitle = 'Play - WikiMillionaire';
 

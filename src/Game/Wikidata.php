@@ -14,6 +14,20 @@ class Wikidata
     private const USER_AGENT = 'WikiMillionaire/1.0 (educational game)';
     private const TIMEOUT_SECONDS = 10;
     private const MAX_RETRIES = 2;
+    
+    private string $language;
+    private Language $languageService;
+
+    /**
+     * Constructor
+     * 
+     * @param string $language Language code (e.g., 'en', 'es', 'fr')
+     */
+    public function __construct(string $language = 'en')
+    {
+        $this->language = $language;
+        $this->languageService = new Language();
+    }
 
     /**
      * Get a random question based on difficulty level
@@ -192,7 +206,7 @@ class Wikidata
                 ?country wdt:P36 ?capital .
                 ?country wikibase:sitelinks ?sitelinks .
                 FILTER(?sitelinks > 50)
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "' . $this->language . '". }
             }
             ORDER BY RAND()
             LIMIT 15
@@ -205,11 +219,20 @@ class Wikidata
             throw new \Exception('No data found for capital question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['countryLabel', 'capitalLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for capital question');
+        }
+        
         $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
         $randomIndex = array_rand($slicedResults);
         $selectedCountry = $slicedResults[$randomIndex];
         
-        $question = '¿Cuál es la capital de ' . $selectedCountry['countryLabel']['value'] . '?';
+        $question = $this->languageService->get('q_what_capital', [
+            'country' => $selectedCountry['countryLabel']['value']
+        ]);
         $correctAnswer = $selectedCountry['capitalLabel']['value'];
         
         $incorrectOptions = array_slice(
@@ -835,6 +858,34 @@ class Wikidata
         }
         
         return 'https://commons.wikimedia.org/wiki/Special:Redirect/file/' . urlencode($url);
+    }
+
+    /**
+     * Filter results to ensure all required labels exist in the selected language
+     * This prevents questions where answers don't have translations
+     * 
+     * @param array $results SPARQL query results
+     * @param array $requiredLabels List of label fields that must exist
+     * @return array Filtered results
+     */
+    private function filterResultsWithValidLabels(array $results, array $requiredLabels): array
+    {
+        return array_filter($results, function($result) use ($requiredLabels) {
+            foreach ($requiredLabels as $labelField) {
+                // Check if the label exists and is not empty
+                if (!isset($result[$labelField]['value']) || empty($result[$labelField]['value'])) {
+                    return false;
+                }
+                
+                // Check if the label's xml:lang attribute matches the selected language
+                // Wikidata returns labels with xml:lang attribute indicating the language
+                if (isset($result[$labelField]['xml:lang']) && 
+                    $result[$labelField]['xml:lang'] !== $this->language) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     /**
