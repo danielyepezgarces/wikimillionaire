@@ -10,6 +10,7 @@ namespace WikiMillionaire\Game;
 class GameService
 {
     private Wikidata $wikidata;
+    private Language $language;
     
     private const PRIZE_LEVELS = [
         1 => 100,
@@ -34,12 +35,16 @@ class GameService
     
     public function __construct()
     {
-        $this->wikidata = new Wikidata();
-        
         // Ensure session is started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Initialize language service
+        $this->language = new Language();
+        
+        // Initialize Wikidata with current language
+        $this->wikidata = new Wikidata($this->language->getCurrentLanguage());
     }
     
     /**
@@ -188,7 +193,7 @@ class GameService
                 'gameWon' => true,
                 'finalScore' => $currentPrize,
                 'level' => $currentLevel,
-                'message' => '¡Felicitaciones! ¡Has ganado el millón!'
+                'message' => $this->language->get('msg_congratulations')
             ];
             
             $this->endGame($currentPrize);
@@ -207,7 +212,7 @@ class GameService
             'level' => $_SESSION['game']['level'],
             'score' => $currentPrize,
             'nextPrize' => self::PRIZE_LEVELS[$_SESSION['game']['level']],
-            'message' => '¡Correcto!'
+            'message' => $this->language->get('msg_correct')
         ];
     }
     
@@ -250,15 +255,15 @@ class GameService
     public function useFiftyFifty(): array
     {
         if (!isset($_SESSION['game'])) {
-            throw new \Exception('No active game');
+            throw new \Exception($this->language->get('error_no_active_game'));
         }
         
         if (!isset($_SESSION['currentQuestion'])) {
-            throw new \Exception('No current question');
+            throw new \Exception($this->language->get('error_no_current_question'));
         }
         
         if (!$_SESSION['game']['lifelines']['fiftyFifty']) {
-            throw new \Exception('Fifty-fifty lifeline already used');
+            throw new \Exception($this->language->get('msg_fifty_fifty_already_used'));
         }
         
         // Mark lifeline as used
@@ -282,7 +287,7 @@ class GameService
         return [
             'success' => true,
             'options' => $remainingOptions,
-            'message' => 'Fifty-fifty used! Two incorrect answers removed.'
+            'message' => $this->language->get('msg_fifty_fifty_used')
         ];
     }
     
