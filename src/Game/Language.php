@@ -91,7 +91,14 @@ class Language
         $translationFile = __DIR__ . '/../../translations/' . $language . '.json';
         
         if (file_exists($translationFile)) {
-            $json = file_get_contents($translationFile);
+            $json = @file_get_contents($translationFile);
+            
+            if ($json === false) {
+                error_log("Failed to read translation file: {$translationFile}");
+                $this->translations = [];
+                return;
+            }
+            
             $this->translations = json_decode($json, true);
             
             // Check for JSON parsing errors
@@ -108,7 +115,14 @@ class Language
             // Fallback to English
             $fallbackFile = __DIR__ . '/../../translations/' . self::FALLBACK_LANGUAGE . '.json';
             if (file_exists($fallbackFile)) {
-                $json = file_get_contents($fallbackFile);
+                $json = @file_get_contents($fallbackFile);
+                
+                if ($json === false) {
+                    error_log("Failed to read fallback translation file: {$fallbackFile}");
+                    $this->translations = [];
+                    return;
+                }
+                
                 $this->translations = json_decode($json, true);
                 
                 // Check for JSON parsing errors
