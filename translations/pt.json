@@ -59,5 +59,18 @@
     "leaderboard_player": "Jogador",
     "leaderboard_score": "Pontuação",
     "leaderboard_level": "Nível",
-    "leaderboard_date": "Data"
+    "leaderboard_date": "Data",
+    "home_title": "WikiMilionário - Teste seus conhecimentos",
+    "home_subtitle": "Teste seus conhecimentos com nosso jogo de perguntas e respostas no estilo \"Quem quer ser um milionário?\" usando dados reais do Wikidata.",
+    "home_play_now": "Jogar Agora",
+    "home_multiplayer": "Multijogador",
+    "home_feature_wikidata_title": "Perguntas Wikidata",
+    "home_feature_wikidata_desc": "Perguntas geradas a partir da base de conhecimento Wikidata.",
+    "home_feature_daily_title": "Concurso Diário",
+    "home_feature_daily_desc": "Novas perguntas todos os dias para competir com outros jogadores.",
+    "home_feature_leaderboard_title": "Classificações",
+    "home_feature_leaderboard_desc": "Compita pelos primeiros lugares nos rankings diários, semanais e mensais.",
+    "footer_about": "Sobre",
+    "footer_privacy": "Privacidade",
+    "footer_terms": "Termos"
 }

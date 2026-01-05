@@ -59,5 +59,18 @@
     "leaderboard_player": "Player",
     "leaderboard_score": "Score",
     "leaderboard_level": "Level",
-    "leaderboard_date": "Date"
+    "leaderboard_date": "Date",
+    "home_title": "WikiMillionaire - Test Your Knowledge",
+    "home_subtitle": "Test your knowledge with our \"Who Wants to Be a Millionaire?\" style quiz game using real data from Wikidata.",
+    "home_play_now": "Play Now",
+    "home_multiplayer": "Multiplayer",
+    "home_feature_wikidata_title": "Wikidata Questions",
+    "home_feature_wikidata_desc": "Questions generated from the Wikidata knowledge base.",
+    "home_feature_daily_title": "Daily Contest",
+    "home_feature_daily_desc": "New questions every day to compete with other players.",
+    "home_feature_leaderboard_title": "Leaderboards",
+    "home_feature_leaderboard_desc": "Compete for the top spots in daily, weekly, and monthly rankings.",
+    "footer_about": "About",
+    "footer_privacy": "Privacy",
+    "footer_terms": "Terms"
 }
