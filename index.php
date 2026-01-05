@@ -6,8 +6,11 @@
  * Displays game features, call-to-action buttons, and navigation.
  */
 
+// Load helpers for translation
+require_once __DIR__ . '/templates/helpers.php';
+
 // Set page title
-$pageTitle = 'WikiMillionaire - Test Your Knowledge';
+$pageTitle = t('home_title');
 
 // Set content template path
 $contentTemplate = __DIR__ . '/templates/index.php';

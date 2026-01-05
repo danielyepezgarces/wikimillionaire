@@ -59,5 +59,18 @@
     "leaderboard_player": "Spieler",
     "leaderboard_score": "Punktzahl",
     "leaderboard_level": "Level",
-    "leaderboard_date": "Datum"
+    "leaderboard_date": "Datum",
+    "home_title": "WikiMillionär - Teste dein Wissen",
+    "home_subtitle": "Teste dein Wissen mit unserem Quiz im Stil von \"Wer wird Millionär?\" mit echten Daten aus Wikidata.",
+    "home_play_now": "Jetzt Spielen",
+    "home_multiplayer": "Mehrspieler",
+    "home_feature_wikidata_title": "Wikidata-Fragen",
+    "home_feature_wikidata_desc": "Fragen, die aus der Wikidata-Wissensdatenbank generiert werden.",
+    "home_feature_daily_title": "Täglicher Wettbewerb",
+    "home_feature_daily_desc": "Jeden Tag neue Fragen, um mit anderen Spielern zu konkurrieren.",
+    "home_feature_leaderboard_title": "Bestenlisten",
+    "home_feature_leaderboard_desc": "Konkurriere um die Spitzenplätze in den täglichen, wöchentlichen und monatlichen Ranglisten.",
+    "footer_about": "Über",
+    "footer_privacy": "Datenschutz",
+    "footer_terms": "Bedingungen"
 }
