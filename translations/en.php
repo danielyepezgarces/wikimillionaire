@@ -12,6 +12,7 @@ return [
     'nav_play' => 'Play',
     'nav_leaderboard' => 'Leaderboard',
     'nav_back' => 'Back',
+    'nav_select_language' => 'Select language',
     
     // Play page
     'play_title' => 'Play - WikiMillionaire',

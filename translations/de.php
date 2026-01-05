@@ -12,6 +12,7 @@ return [
     'nav_play' => 'Spielen',
     'nav_leaderboard' => 'Bestenliste',
     'nav_back' => 'Zurück',
+    'nav_select_language' => 'Sprache auswählen',
     
     // Play page
     'play_title' => 'Spielen - WikiMillionär',
