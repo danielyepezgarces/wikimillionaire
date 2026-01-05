@@ -13,7 +13,7 @@
     "play_login_btn": "Login with Wikidata",
     "play_back_home": "Back to Home",
     "game_title": "Play Game - WikiMillionaire",
-    "game_level": "Level: {level} \/ {maxLevel}",
+    "game_level": "Level: {level} / {maxLevel}",
     "game_prize": "Prize: {prize} points",
     "game_time_remaining": "Time remaining: {time}s",
     "game_loading_question": "Loading question...",

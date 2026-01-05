@@ -92,13 +92,32 @@ class Language
         
         if (file_exists($translationFile)) {
             $json = file_get_contents($translationFile);
-            $this->translations = json_decode($json, true) ?? [];
+            $this->translations = json_decode($json, true);
+            
+            // Check for JSON parsing errors
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("JSON parsing error in translation file {$translationFile}: " . json_last_error_msg());
+                $this->translations = [];
+            }
+            
+            // Ensure translations is an array
+            if (!is_array($this->translations)) {
+                $this->translations = [];
+            }
         } else {
             // Fallback to English
             $fallbackFile = __DIR__ . '/../../translations/' . self::FALLBACK_LANGUAGE . '.json';
             if (file_exists($fallbackFile)) {
                 $json = file_get_contents($fallbackFile);
-                $this->translations = json_decode($json, true) ?? [];
+                $this->translations = json_decode($json, true);
+                
+                // Check for JSON parsing errors
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    error_log("JSON parsing error in fallback translation file {$fallbackFile}: " . json_last_error_msg());
+                    $this->translations = [];
+                } else if (!is_array($this->translations)) {
+                    $this->translations = [];
+                }
             } else {
                 $this->translations = [];
             }
