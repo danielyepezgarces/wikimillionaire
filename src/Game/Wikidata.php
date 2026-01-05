@@ -739,11 +739,18 @@ class Wikidata
             throw new \Exception('No data found for flag question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['countryLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for flag question');
+        }
+        
         $slicedResults = array_values(array_slice($results, 0, min(10, count($results))));
         $randomIndex = array_rand($slicedResults);
         $selectedCountry = $slicedResults[$randomIndex];
         
-        $question = '¿A qué país pertenece esta bandera?';
+        $question = $this->languageService->get('q_what_country_flag');
         $correctAnswer = $selectedCountry['countryLabel']['value'];
         
         $flagFileName = $selectedCountry['flag']['value'];
@@ -796,10 +803,17 @@ class Wikidata
             throw new \Exception('No data found for artwork question');
         }
         
+        // Filter results to ensure all labels exist in the selected language
+        $results = $this->filterResultsWithValidLabels($results, ['artworkLabel', 'creatorLabel']);
+        
+        if (empty($results)) {
+            throw new \Exception('No data with valid translations for artwork question');
+        }
+        
         $randomIndex = array_rand($results);
         $selectedArtwork = $results[$randomIndex];
         
-        $question = '¿Quién pintó esta obra?';
+        $question = $this->languageService->get('q_who_painted');
         $correctAnswer = $selectedArtwork['creatorLabel']['value'];
         
         $imageFileName = $selectedArtwork['image']['value'];
