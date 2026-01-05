@@ -1,4 +1,5 @@
 <!-- Game Template with PHP Backend Integration -->
+<?php require_once __DIR__ . '/helpers.php'; ?>
 <div class="flex min-h-screen flex-col bg-gradient-to-b from-purple-900 to-indigo-950 p-4 overflow-hidden">
    <div class="container mx-auto max-w-4xl flex flex-col h-full">
       <!-- Header -->
@@ -17,8 +18,9 @@
             </div>
          </div>
          
-         <!-- Lifelines -->
+         <!-- Lifelines and Language Selector -->
          <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            <?php echo renderLanguageSelector(); ?>
             <button id="fiftyFiftyBtn" class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border bg-background hover:text-accent-foreground h-10 w-10 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-500/10" title="50:50 Lifeline">
                <span class="font-bold">50</span>
             </button>
