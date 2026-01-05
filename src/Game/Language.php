@@ -88,15 +88,17 @@ class Language
      */
     private function loadTranslations(string $language): void
     {
-        $translationFile = __DIR__ . '/../../translations/' . $language . '.php';
+        $translationFile = __DIR__ . '/../../translations/' . $language . '.json';
         
         if (file_exists($translationFile)) {
-            $this->translations = require $translationFile;
+            $json = file_get_contents($translationFile);
+            $this->translations = json_decode($json, true) ?? [];
         } else {
             // Fallback to English
-            $fallbackFile = __DIR__ . '/../../translations/' . self::FALLBACK_LANGUAGE . '.php';
+            $fallbackFile = __DIR__ . '/../../translations/' . self::FALLBACK_LANGUAGE . '.json';
             if (file_exists($fallbackFile)) {
-                $this->translations = require $fallbackFile;
+                $json = file_get_contents($fallbackFile);
+                $this->translations = json_decode($json, true) ?? [];
             } else {
                 $this->translations = [];
             }
